@@ -1,0 +1,235 @@
+*자바스트립트는 객체 타입의 언어이다 
+
+
+2-3 implicit-coercion(암묵적 타입 변환)
+
+개발자가 의도적으로 값의 타입을 변환하는 것을 명시적 타입 변환(explicit coercion)이라고 한다.
+자바스크립트 엔진에 의해 암묵적으로 타입이 자동 변환 되는 것을 암묵적 타입 변환(implicit coercion)이라고 한다. 
+명시적 타입 변환은 코드에서 드러나지만 암묵적 타입 변환은 드러나지 않으므로 타입 변환 된 결과를 예측할 수 있어야 오류를 방지할 수 있다.
+
+2-3-1. convert to string (문자열 타입으로 변환)
+  console.log(10 + '20');
+    - 문자열 연결 연산자(+)는 문자열 타입이 아닌 피연산자를 문자열 타입으로 암묵적으로 변환한다.
+
+2-3-2. convert to number (숫자 타입으로 변환)
+  console.log(10 - '5');    // 산술 연산자
+  console.log(10 > '5');      // 비교 연산자
+  console.log(+'');           // + 단항 연산자
+    - 산술 연산자의 피연산자는 모두 숫자여야하므로 숫자가 아닌 피 연산자를 숫자 타입으로 암묵적 타입 변환한다.
+    - 비교 연산자로 크기를 비교하기 위해 모두 숫자 타입이여야 하므로 숫자가 아닌 피 연산자를 숫자 타입으로 암묵적 타입 변환한다.
+    - + 단항 연산자는 피연산자가 숫자 타입의 값이 아니면 숫자 타입의 값으로 암묵적 타입 변환한다.
+
+2-3-3. convert to boolean (논리 타입으로 변환)
+  if(undefined) console.log("if(undefined)");         // false
+  if(null) console.log("if(null)");                   // false
+  if(0) console.log("if(0)");                         // false
+  if(NaN) console.log("if(NaN)");                     // false
+  if('') console.log("if('')");                       // false
+  if('JavaScript') console.log("if('JavaScript')");   // true
+    - 자바스크립트 엔진은 불리언 타입이 아닌 값을 Truthy 값(참으로 평가 되는 값) 또는 Falsy 값(거짓으로 평가되는 값)으로 구분한다.
+    - Truthy -> true, Falsy -> false로 암묵적 타입 변환 된다.
+
+2-4. explicit coercion(명시적 타입 변환)
+개발자의 의도에 따라 값의 타입을 변환하는 것이다. 
+자바스크립트에서 기본 제공하는 표준 빌트인 생성자 함수(String, Number, Boolean)를 new 연산자 없이 호출하는 방법, 
+빌트인 메서드를 사용하는 방법, 암묵적 타입 변환을 이용하는 방법이 있다.
+
+2-4-1. convert to string (문자열 타입으로 변환)
+console.log(String(10));        // String 생성자 함수
+console.log((10).toString());   // Object.prototype.toString 메서드
+console.log(10 + '20');         // 문자열 연결 연산자
+  - String 생성자 함수를 new 연산자 없이 호출한다.
+  - Object.prototype.toString 메서드를 사용한다.
+  - 문자열 연결 연산자를 이용한다.
+
+2-4-2. convert to number (숫자 타입으로 변환)
+  console.log(Number('10'));          // Number 생성자 함수
+  console.log(parseInt('10'));        // parseInt 함수
+  console.log(parseFloat('10.01'));   // parseFloat 함수
+  console.log(+'');                   // + 단항 연산자
+  console.log('10' * 1);              // * 산술 연산자
+    - Number 생성자 함수를 new 연산자 없이 호출한다.
+    - parseInt, parseFloat 함수를 이용한다. (문자열 -> 숫자만 가능)
+    - + 단항 산술 연산자를 이용한다.
+    - 산술 연산자를 이용한다.
+
+2-4-3. convert to boolean (논리 타입으로 변환)
+  console.log(Boolean('JavaScript'));   // Boolean 생성자 함수
+  console.log(!!'JavaScript');          // ! 부정 논리 연산자 두 번 사용
+    - Boolean 생성자 함수를 new 연산자 없이 호출한다.
+    - ! 부정 논리 연산자를 두 번 사용한다.
+
+
+3. operator(연산자)
+
+기본적인 연산자의 사용은 Java와 다르지 않다. JavaScript에서 추가적으로 필요한 연산자와 관련한 내용을 담았다.
+
+3-1. comparison operator(비교 연산자)
+비교 연산자는 좌항과 우항의 비교 연산자를 비교한 다음 그 결과를 불리언 값으로 반환한다. 
+if문이나 for문과 같은 제어문의 조건식에서 주로 사용한다.
+  // 숫자 1, 문자 '1', true 비교
+  console.log(`1 == '1' : ${1 == '1'}`);      // true
+  console.log(`1 == true : ${1 == true}`);    // true
+  console.log(`1 === '1' : ${1 === '1'}`);    // false
+  console.log(`1 === true : ${1 === true}`);  // false
+    - 동등/일치 비교 연산자
+        - 동등 비교(loose equality) 연산자와 일치 비교(strict equality) 연산자는 비교하는 엄격성의 정도가 다르다.
+        - 동등 비교(==, !=) 연산자는 먼저 암묵적 타입 변환을 통해 타입을 일치시킨 후 같은 값인지 비교한다.
+        - 일치 비교(===, !==) 연산자는 타입과 값이 모두 일치하는지 비교한다.
+
+        * == : 값이 같을 때, != : 값이 다를 때 
+        * === : 타입과 값이 모두 일치 할 떄 (자바스크립트 원시타입, 문자열 비교도 가능), !== : 타입과 값이 일치하지 않을 때(?)
+    - <=, >= 사용 가능
+    -알파벳 대소 비교도 가능 a<b 순서 순, 소<대, 대>소
+    
+
+3-2. logical operator(논리 연산자)
+  console.log('apple' || 'banana');       // apple
+  console.log('apple' && 'banana');       // banana
+    - short circuit evaluation(단축 평가)
+        - 표현식을 평가하는 도중 평가 결과가 확정 된 경우 나머지 평가 과정을 생략하는 것을 말한다.
+    - || OROR  
+    - && ANDAND  
+
+3-3. ES11 operator
+ES11(ECMAScript2020)에서 도입된 연산자
+
+3-3-1. optional chaining operator(옵셔널 체이닝 연산자)
+  var obj = null;
+  var val = obj?.value;
+  console.log(val);
+    - 좌항의 피연산자가 null 또는 undefined인 경우 undefined를 반환하고 그렇지 않으면 우항의 프로퍼티 참조를 이어간다.
+
+3-3-2. nullish coalescing operator(null 병합 연산자)
+  var test = null ?? '기본 값';
+  console.log(test);
+    - 좌항의 피연산자가 null 또는 undefined인 경우 우항의 피연산자를 반환하고, 그렇지 않으면 좌항의 피연산자를 반환한다.
+    - 변수에 기본 값을 설정할 때 유용하다.
+
+4. object literal(리터럴 객체)
+
+4-1. object(객체)
+
+자바스크립트는 객체 기반 프로그래밍 언어로 원시 값을 제외한 나머지 값(함수, 배열, 정규 표현식 등)은 모두 객체이다. 
+객체는 0개 이상의 프로퍼티로 구성 된 집합이며 프로퍼티는 키(key)와 값(value)으로 구성된다. 
+자바스크립트에서 사용할 수 있는 모든 값은 프로퍼티 값이 될 수 있다. 프로퍼티 값이 함수일 경우 method라고 부른다.
+
+객체 생성 방법
+자바, C++ 같은 클래스 기반 객체 지향 언어는 클래스를 사전에 정의하고 필요한 시점에 new 연산자와 함께 생성자를 호출하여 
+인스턴스를 생성하는 방식으로 객체를 생성한다. 
+자바스크립트는 프로토타입 기반 객체지향 언어로 클래스 기반 객체 지향 언어와는 달리 다양한 객체 생성 방법 지원한다. 
+
+1. 객체 리터럴 {}
+2. Object 생성자 함수 
+3. 생성자 함수 
+4. Object.create 메서드 
+5. Class(ES6) 
+이 중 가장 일반적이고 간단한 방법이 객체 리터럴을 사용하는 방법이다. 중괄호 내 0개 이상의 프로퍼티를 정의한다.
+
+var student = {    
+	// 키-값 쌍으로 구성 된 프로퍼티    
+	// 프로퍼티 : 객체의 상태를 나타내는 값(data)    
+	name : '유관순',    
+	age : 16,    
+	// 메서드 : 프로퍼티(상태 데이터)를 참조하고 조작할 수 있는 동작(behavior)    
+	getInfo : function(){        
+	return `${this.name}(은)는 ${this.age}세입니다.`;    
+	}
+};
+
+객체 리터럴의 중괄호는 코드 블록을 의미하지 않는다. 따라서 닫는 중괄호 뒤에는 세미콜론을 붙인다. 
+숫자 값이나 문자열을 만드는 것과 유사하게 리터럴로 객체를 생성한다. 
+객체 리터럴에 프로퍼티를 포함시켜 객체를 생성함과 동시에 프로퍼티를 만들 수도 있고, 
+객체를 생성한 이후에 프로퍼티를 동적으로 추가할 수도 있다. 
+객체 리터럴 외의 객체 생성 방식은 모두 함수를 사용해서 생성하므로 함수 학습 이후에 다시 학습할 것이다.
+
+4.2 . property (속성) *,와 ;는 꼭! 정확하게 기입할 것 
+객체는 프로퍼티의 집합이며, 프로퍼티는 키와 값으로 구성 된다.
+
+4-2-1. property
+  var student = {    
+  	// 프로퍼티 키는 name, 프로퍼티 값은 '유관순'    
+  	name : '유관순',    // 프로퍼티 키는 age, 프로퍼티 값은 16    
+  	age : 16,    // 프로퍼티 나열은 쉼표로 구분하며 마지막 프로퍼티 뒤에 쉼표를 사용해도 된다.
+  };
+    - 프로퍼티 키 : 빈 문자열을 포함하는 모든 문자열 또는 심벌 값
+        - 프로퍼티 값에 접근하기 위한 식별자
+        - 문자열이므로 따옴표를 사용하지만 식별자 네이밍 규칙을 따르는 경우 사용하지 않아도 된다.
+        - 단, 식별자 네이밍 규칙을 따르지 않는 이름은 따옴표를 반드시 사용해야 하며 가능한 식별자 네이밍 규칙을 따르는 것을 권장한다.
+    - 프로퍼티 값 : 자바스크립트에서 사용할 수 있는 모든 값
+
+4-2-2. method
+  var dog = {    
+  	name : '뽀삐',    
+  	// 메서드 - 객체에 묶여 있는 함수    
+  	eat : function (food) {        
+  	console.log(`${this.name}(은)는 ${food}를 맛있게 먹어요.`);    
+  	}
+  }
+    자바스크립트의 함수는 객체이다. 함수는 값으로 취급할 수 있고 프로퍼티 값으로 사용할 수 있다.
+
+4-2-3. property accessor(프로퍼티 접근)
+  console.log(dog.name);        // 마침표 표기법(dot notation)
+  console.log(dog['name']);     // 대괄호 표기법(square bracket notation)
+  ​
+    마침표 표기법(dot notation)
+    
+    대괄호 표기법(square bracket notation)
+    프로퍼티 키는 반드시 따옴표로 감싼 문자열 사용한다.
+    프로퍼티 키가 식별자 네이밍 규칙을 준수하지 않는 이름일 경우 반드시 대괄호 표기법 사용한다.
+    프로퍼티 키가 숫자로 이뤄진 문자열인 경우 따옴표를 생략할 수 있다.
+
+4-2-4. property change, add, remove(프로퍼티 값 변경, 추가, 삭제)
+  var dog = { name : '뽀삐' }
+  dog.name = '두부';          // 프로퍼티 값 갱신
+  dog.age = 3;                // 프로퍼티 값 추가
+  delete dog.age;             // 프로퍼티 삭제
+
+    - 이미 존재하는 프로퍼티에 값을 할당하면 프로퍼티 값이 갱신된다.
+    - 프로퍼티 동적 추가
+        - 존재하지 않는 프로퍼티에 값을 할당하면 프로퍼티가 동적으로 생성 되어 추가되고 프로퍼티 값이 할당 된다.
+    - 프로퍼티 삭제
+        - delete 연산자는 객체의 프로퍼티를 삭제한다.
+        - 만약 존재하지 않는 프로퍼티를 삭제하면 아무런 에러 없이 무시된다.
+
+4-3. ES6
+4-3-1. property value shorthand(프로퍼티 값 단축 구문)
+  var id = 'p-0001';
+  var price = 30000;
+  var product2 = { id, price };
+    ES6에서는 프로퍼티 값으로 변수를 사용하는 경우 변수 이름과 프로퍼티 키가 동일한 이름일 때 프로퍼티 키를 생략할 수 있다. 
+    프로퍼티 키는 변수 이름으로 자동 생성 된다.
+    
+4-3-2. method shorthand(메서드 단축)
+  var dog = {    
+  	name : '두부',    
+  	// 메서드 축약 표현    
+  	eat(food) {        
+  	console.log(`${this.name}(은)는 ${food}를 맛있게 먹어요.`);    
+  	}
+  }
+    - ES5에서 메서드를 정의하려면 프로퍼티 값으로 함수를 할당한다.
+    - ES6에서는 메서드를 정의할 때 function 키워드를 생략한 축약 표현을 사용할 수 있다.
+
+4-4 additional-operator-and-traversal (추가 연산자와 순회)
+
+4-4-1. in operator (in 연산자)
+  var student = {    
+  	name : '유관순'
+  };
+  console.log("name" in student);                 // true - 존재
+  console.log("height" in student);               // false - 존재하지 않음
+    - in 연산자를 이용해 프로퍼티 존재 여부를 확인할 수 있다.
+
+4-4-2. for in
+  var student = {    
+  	name : '유관순',    
+  	age : 16
+  };
+  for (var key in student) {    
+  	console.log(`${key} : ${student[key]}`);   // name : '유관순', age : 16 출력
+  }
+    - for in 반복문을 이용해 객체의 모든 키를 순회할 수 있다
+    * 자주 사용하니 잘 알아 두도록 하자 
+
+
