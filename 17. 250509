@@ -1,0 +1,335 @@
+* 인텔리제이, 소스트리에서 깃허브로 업로드하는 방법 익혀두기 
+* 다형성, 추상화에 대해서 이해하고 넘어갈 것 
+
+
+ /* comment. 다형성과 타입 형변환에 대해 이해할 수 있다.
+        * 다형성이란?
+        * 다형성이란 하나의 인스턴스가 여러 가지 타입을 가질 수 있는 것을 의미한다.
+        * 그렇기 때문에 하나의 타입으로 여러 타입의 인스턴스를 처리할 수 있기도 하고,
+        * 하나의 메소드 호출로 객체별로 각기 다른 방법으로 동작하게 할 수도 있다.
+        *
+        * 다형성은 객체지향 프로그래밍의 3대 특징 (캡슐화, 상속, 다형성) 중 하나이며,
+        * 객체지향 프로그래밍의 꽃이라고 불리울 정도로 활용성이 높고 장점이 많다.
+        *
+        * 다형성의 장점
+        *  1. 여러 타입의 객체를 하나의 타입으로 관리할 수 있기 때문에 유지보수성과 생산성이 증가된다.
+        *  2. 상속을 기반으로 한 기술이기 때문에 상속관계에 있는 모든 객체는 동일한 메세지를 수신할 수 있다.
+        *     이런 동일한 메세지를 수신받아 처리하는 내용을 객체별로 다르게 할 수 있다는 장점을 가지고 있다.
+        *     (다양한 기능을 사용하는데 있어서 관리해야 할 메세지 종류가 줄어들게 된다.)
+        *     하나의 호출로 여러 가지 동작을 수행할 수 있다는 측면에서 오버로딩을 다형성으로 보기도 한다.
+        *     다형성을 이해하기 쉬운 가장 좋은 예 이기도 하다.
+        *     하지만 이 부분은 이견이 많이 존재하기 때문에 다형성을 이해하는데 참고로만 활용하자.
+        *  3. 확장성이 좋은 코드를 작성할 수 있다.
+        *  4. 결합도를 낮춰서 유지보수성을 증가시킬 수 있다.
+        * */
+
+        System.out.println("Animal 생성 ==================");
+        Animal animal = new Animal();
+        animal.eat();
+        animal.run();
+        animal.cry();
+
+        System.out.println("Rabbit 생성 ==================");
+        Rabbit rabbit = new Rabbit();
+        rabbit.eat();
+        rabbit.run();
+        rabbit.cry();
+        rabbit.jump();
+
+        System.out.println("Tiget 생성 ===================");
+        Tiger tiger = new Tiger();
+        tiger.eat();
+        tiger.run();
+        tiger.cry();
+        tiger.bite();
+
+        /* 부모 타입으로 자식 인스턴스 주소값 저장 */
+        Animal a1 = new Rabbit();
+        Animal a2 = new Tiger();
+
+//        Rabbit r = new Animal();
+//        Tiger t = new Animal();
+
+        /* 동적 바인딩 확인
+        *  컴파일 당시에는 해당 타입의 메소드와 연결되어 있다가
+        *  런타임 당시 실제 객체가 가진 오버라딩된 메소드로 바인딩이 바뀌어 동작하는 것을 의미한다.
+        * */
+
+        System.out.println("동적바인딩 확인 ================");
+        a1.cry();
+        a2.cry();
+
+//        a1.jump();
+//        a2.bite();
+
+        /* 타입 형변환 확인 */
+        System.out.println("클래스타입 형변환 확인 ===============");
+        ((Rabbit) a1).jump();
+        ((Tiger) a2).bite();
+
+        /* 타입 형변환을 잘못 하는 경우
+        *  컴파일시에는 문제가 되지 않지만 런타임시 Exception 발생한다. */
+//        ((Tiger) a1).bite();
+
+        /* instanceof 연산자 사용 확인 */
+        System.out.println("instanceof 확인 =================");
+        System.out.println("a1이 Tiger 타입인지 확인 : " + (a1 instanceof Tiger));
+        System.out.println("a1이 Rabbit 타입인지 확인 : " + (a1 instanceof Rabbit));
+
+        System.out.println("a1이 Animal 타입인지 확인 : " + (a1 instanceof Animal));
+
+        System.out.println("a1이 Object 타입인지 확인 : " + (a1 instanceof Object));
+
+        if(a1 instanceof Rabbit) {
+            ((Rabbit) a1).jump();
+        }
+
+        if(a1 instanceof Tiger) {
+            ((Tiger) a1).bite();
+        }
+
+        /* 클래스의 업캐스팅과 다운캐스팅 확인
+        *  클래스 형변환 up-casting과 down-casting으로 구분할 수 있다.
+        *  up-casting : 상위 타입으로 형변환
+        *  down-casting : 하위 타입으로 형변환
+        *  또한 작성 여부에 따라 명시적과 묵시적 두 가지로 구분된다.
+        * */
+        Animal animal1 = (Animal) new Rabbit(); // up-casting 명시적 형변환
+        Animal animal2 = new Rabbit(); // up-casting 묵시적 형변환
+
+        Rabbit rabbit1 = (Rabbit) animal1;      // down-casting 명시적 형변환
+//        Rabbit rabbit2 = animal1;      // down-casting 묵시적 형변환 안됨
+    }
+}
+
+package com.ohgiraffers.section01.polymorphism;
+
+public class Application2 {
+
+    public static void main(String[] args) {
+
+        /* comment. 다형성을 적용하여 객체 배열을 만들어 인스턴스를 연속 처리할 수 있다. */
+        Animal[] animals = new Animal[5];
+        animals[0] = new Rabbit();
+        animals[1] = new Tiger();
+        animals[2] = new Rabbit();
+        animals[3] = new Tiger();
+        animals[4] = new Rabbit();
+
+        /* Animal 클래스가 가지는 메소드를 오버라이딩한 메소드 호출 시 동적바인딩을 이용할 수 있다. */
+        for(int i = 0; i < animals.length; i++) {
+            animals[i].cry();
+        }
+
+        for(int i = 0; i < animals.length; i++) {
+            if(animals[i] instanceof Rabbit) {
+                ((Rabbit) animals[i]).jump();
+            } else if(animals[i] instanceof Tiger) {
+                ((Tiger) animals[i]).bite();
+            } else {
+                System.out.println("호랑이나 토끼가 아닙니다.");
+            }
+        }
+    }
+
+     /* comment. 추상클래스와 추상메소드에 대해 이해할 수 있다. */
+        /* 추상클래스와 추상메소드
+        * 추상메소드를 0개 이상 포함하는 클래스 추상클래스라고 한다.
+        * 추상클래스는 클래스 선언부에 abstract 키워드를 명시해야 한다.
+        * 추상클래스로는 인스턴스를 생성할 수 없다.
+        * 추상클래스를 사용하려면 추상클래스를 상속받은 하위 클래스를 이용해서 인스턴스를 생성해야 한다.
+        * 이 때, 추상클래스는 상위 타입으로 사용될 수 있으며, 다형성을 이용할 수 있다.
+        *
+        * 추상클래스에 작성한 추상메소드는 반드시 후손이 오버라이딩해서 작성해야 하며,
+        * 후손 클래스들의 메소드들의 공통 인터페이스로의 역할을 수행할 수 있다.
+        * 추상클래스에 작성한 메소드를 호출하게 되면 실제 후손 타입의 인스턴스가 가지는 메소드는
+        * 다형성이 적용되어 동적바인딩에 의한 다양한 응답을 할 수 있다.
+        *
+        * 추상 클래스를 상속받아 구현할 때는 extends 키워드를 사용하며
+        * 자바에서는 extends로 클래스를 상속받을 시 하나의 부모 클래스만 가질 수 있다. (단일 상속)
+        *
+        * 추상 메소드란?
+        * 메소드의 선언부만 있고 구현부가 없는 메소드를 추상메소드라고 한다.
+        * 추상메소드의 경우 반드시 abstract 키워드를 메소드 헤드에 작성해야 한다.
+        * ex) public abstract void method();
+        * */
+
+//        Product product = new Product();
+
+        SmartPhone smartPhone = new SmartPhone();
+
+        System.out.println(smartPhone instanceof SmartPhone);
+        System.out.println(smartPhone instanceof Product);
+
+        Product product = new SmartPhone();
+
+        product.abstMethod();
+
+        product.nonStaticMethod();
+
+        Product.staticMethod();
+
+        /* 추상클래스를 왜 쓰냐?
+        *  추상클래스의 추상메소드는 오버라이딩에 대한 강제성이 부여된다.
+        *  따라서 여러 클래스들을 그룹화 하여
+        *  필수 기능을 정의하여 강제성을 부여해 개발 시 일관된 인터페이스를 제공할 수 있다.
+        *
+        *  하지만 다른 클래스를 상속 받고 있는 클래스를 작성할 시에는 추상클래스를 추가로 상속받을 수 없다.
+        *  그래서 추상클래스보다 더 강제성이 강한 인터페이스(interface)라는 매커니즘을 제공하고 있다.
+        * */
+    }
+
+===== 실습 문제 ============
+1. Car  - 부모 클래스 
+2. Sonata, Bus 클래스 - Car 자식 클래스, Override 
+3.  Washcar_abst - 추상 클래스, 메소드 
+4.  Wash_abst - Washcar_abst  Override 
+5. Application1 결과 출력 (Car - 부모 클래스, Sonata, Bus- 자식 클래스, 동적바인딩, 타입형변환, instanceof 연산자,  추상클래스)
+
+
+// Car class - Sonata, Bus의 부모 클래스
+public class Car {
+
+    public void start() {
+        System.out.println("차에 시동을 걸고 있습니다.");
+    }
+    public void drive() {
+        System.out.println("차가 도로를 달리고 있습니다.");
+    }
+
+    public void stop() {
+        System.out.println("차가 정지했습니다.");
+    }
+    public void turnoff() {
+        System.out.println("차의 시동을 껐습니다.");
+    }
+}
+
+// Sonata - Car (부모 클래스) Override 함
+public class Sonata extends Car{
+
+    @Override
+    public void start() {
+        System.out.println("소나타에 시동을 걸었습니다.");
+    }
+
+    @Override
+    public void drive() {
+        System.out.println("소나타를 운전 중입니다. 빵빵~" );
+    }
+
+    @Override
+    public void stop() {
+        System.out.println("소나타가 정지했습니다. 끼익~");
+    }
+
+    @Override
+    public void turnoff() {
+        System.out.println("소나타의 시동을 껐습니다.");
+    }
+}
+
+// Bus - Car (부모 클래스) Override 함
+public class Bus extends Car {
+
+    @Override
+    public void start() {
+        System.out.println("버스에 시동이 걸렸습니다.");
+    }
+
+    @Override
+    public void drive() {
+    System.out.println("버스가 달리고 있습니다! 비켜주세요 빠아앙~~");
+    }
+
+    @Override
+    public void stop() {
+        System.out.println("버스가 정지했습니다. 끼이익~~ ");
+    }
+
+    @Override
+    public void turnoff() {
+        System.out.println("운행은 여기까지 입니다. 버스의 시동을 껐습니다.");
+    }
+}
+
+// Washcar_abst -  추상 클래스(부모) 
+public abstract class Washcar_abst {
+    public abstract void washcarMethod();
+}
+
+// Wash_abst는 구체적인 자식 클래스.
+public class Wash_abst extends Washcar_abst {
+
+    @Override
+    public void washcarMethod() {
+        System.out.println("차를 세차 중입니다.");
+    }
+}
+
+// Washcar_abst(추상 클래스, 부모클래스)를 Wash_abst(자식클래스)가 상속 받고, 
+// washcarMethod(추상 메소드)는 Wash_abst(자식 클래스)에서 오버라이드(재정의) 해줌 
+
+
+// 출력 확인 
+public class Application {
+
+    public static void main(String[] args) {
+
+        System.out.println("Car 생성=====");  // Car 생성=====
+        Car car1 = new Car();
+        car1.start(); //차에 시동을 걸고 있습니다.
+        car1.drive(); //차가 도로를 달리고 있습니다. 
+        car1.stop();  //차가 정지했습니다.
+        car1.turnoff(); //차의 시동을 껐습니다.
+
+        System.out.println("Sonata 생성====="); //Sonata 생성=====
+        Sonata sonata1 = new Sonata();
+        sonata1.start(); //소나타에 시동을 걸었습니다.
+        sonata1.drive(); //소나타를 운전 중입니다. 빵빵~
+        sonata1.stop();  //소나타가 정지했습니다. 끼익~
+        sonata1.turnoff(); //소나타의 시동을 껐습니다.
+
+        System.out.println("Bus 생성====="); //Bus 생성=====
+        Bus bus1 = new Bus();
+        bus1.start(); //버스에 시동이 걸렸습니다.
+        bus1.drive(); //버스가 달리고 있습니다! 비켜주세요 빠아앙~~
+        bus1.stop(); //버스가 정지했습니다. 끼이익~~ 
+        bus1.turnoff(); //운행은 여기까지 입니다. 버스의 시동을 껐습니다.
+
+        /* 부모 타입으로 자식 인스턴스 주소값 저장 */
+        Car c1 = new Sonata();
+        Car c2 = new Bus();
+
+        // 동적 바인딩 확인
+        System.out.println("동적바인딩 확인 ================"); //동적바인딩 확인 ================
+        c1.start(); //소나타에 시동을 걸었습니다.
+        c2.start(); //버스에 시동이 걸렸습니다.
+
+        // 타입 형변환 확인
+        System.out.println("클래스타입 형변환 확인===== "); //클래스타입 형변환 확인===== 
+        ((Sonata) c1).drive(); //소나타를 운전 중입니다. 빵빵~
+        ((Bus) c2).turnoff(); //운행은 여기까지 입니다. 버스의 시동을 껐습니다.
+
+
+        // instanceof 연산자 사용 확인
+        System.out.println("instanceof 확인 ====="); //instanceof 확인 =====
+        
+        System.out.println("c1이 Sonata 타입인지 확인 : " + (c1 instanceof Sonata));
+	        //c1이 Sonata 타입인지 확인 : true
+        System.out.println("c2가 Bus 타입인지 확인 : " + (c2 instanceof Bus));
+					//c2가 Bus 타입인지 확인 : true
+        
+        System.out.println("c1이 Car 타입인지 확인 : " + (c1 instanceof Car));
+					// c1이 Car 타입인지 확인 : true
+        
+        System.out.println("c1이 Object 타입인지 확인 : " + (c1 instanceof Object)); 
+         // c1이 Object 타입인지 확인 : true
+
+
+        // 추상클래스, 메소드 출력
+        System.out.println("추상 메소드 출력===="); // 추상 메소드 출력====
+        Wash_abst wash = new Wash_abst();
+        wash.washcarMethod(); //차를 세차 중입니다.
+    }
+}
