@@ -1,0 +1,581 @@
+* 열거타입(enum), 람다식 (사용법을 익혀보자) 
+
+* 수업진도 chap15 - chap16
+
+===========문제 풀이 
+팀 스터디 (조원 문제 출제) 
+
+**Chapter 15. Enum**
+1. 다음 상수 열거 패턴을 기반으로 Enum 열거 타입을 만들고 질문에 대한 답을 넣어주세요(서술형)
+1-1. 위 코드를 기반으로 Enum 열거타입 작성
+
+public enum Idols {
+
+    AESPA(0),
+    GIDLE(1),
+    IVE(2),
+    TXT(0),
+    EXO(1),
+    ASTRO(2);
+
+    private int ido;
+    Idols(int ido) {
+        this.ido = ido;
+    }
+
+}
+
+1-2. boolean 값 중 하나가 출력되도록 비교를 해주세요
+  1-2-1. GIDLE과 EXO를 비교해주세요. 
+  1-2-2. 어떤 결과가 나오나요?
+  1-2-3. 왜 그런 결과가 나오는 걸까요?
+
+    public static void main(String[] args) {
+
+        boolean isTrue = IdolsTest(Idols.GIDLE, Idols.EXO);
+        System.out.println(isTrue);
+
+    }
+
+    private static boolean IdolsTest(Idols idols1, Idols idols2 ){
+
+        if(idols1 == idols2){
+            return true;
+        } 
+        return false;
+    }
+
+===========
+1-2-2 실행결과 > false
+1-2-3 결과 분석 :  `GIDLE`과 `EXO`는 값이 같아도 서로 다른 열거형 상수이므로 **다른 인스턴스**이기 때문에 false 가 나옴 
+    - `==` 비교는 **인스턴스가 완전히 같은 객체인지** 비교합니다.
+    - `GIDLE`과 `EXO`는 **같은 값(1)**을 갖고 있지만, **다른 인스턴스**입니다.
+    - `GIDLE`과 `EXO`는 값이 같아도 서로 다른 열거형 상수이므로 **다른 인스턴스**입니다.
+    - 즉, `Idols.GIDLE != Idols.EXO` 이므로 `==` 비교 시 `false`가 나오는 겁니다.
+    
+    | enum 상수 | 인스턴스 이름 | 값 (`ido`) | 메모리 주소 |
+    | --- | --- | --- | --- |
+    | `GIDLE` | `Idols.GIDLE` | 1 | A |
+    | `EXO` | `Idols.EXO` | 1 | B |
+    
+    → 둘 다 `ido == 1`이지만, **A != B** → `false`
+    
+    - 따라서 결과는 `false`가 나오는 것이 맞습니다!
+      
+    ### 🔧 만약 값 기반 비교를 하고 싶다면?
+    private static boolean IdolsTest(Idols idols1, Idols idols2){
+        return idols1.ido == idols2.ido;
+    }
+    
+    이렇게 하면 `ido` 값 자체를 비교해서 `true`가 나올 수 있어요.
+    
+
+1-3. 다음 빈 칸을 채워주세요
+
+1-3-1  Enum 열거형으로 선언된 인스턴스는 싱글톤으로 관리된다.
+      이는 하나의 인스턴스임을 보장하기에 비교(==)가 가능하다.
+1-3-2 Enum 타입을 생성할 때 기본생성자 사용이 가능하다. (O, X) > o 가능 
+       
+    | 항목 | 가능 여부 | 설명 |
+    | --- | --- | --- |
+    | 생성자 정의 | ✅ 가능 | private으로 정의됨 |
+    | 생성자 직접 호출 | ❌ 불가능 | `new`로 생성 불가 |
+    | Enum 인스턴스 생성 시점 | 자동 | 클래스 로딩 시 자동 생성됨 |
+    
+    자바 `Enum`은 **싱글톤 패턴**이 적용된 특수한 클래스이기 때문에, 개발자가 임의로 생성하는 것을 방지
+    
+
+**Chapter 16. Lambda**
+
+1. 다음 빈 칸을 채워주세요.
+
+   Java에서는 메소드를 독립적으로 선언하는 것이 불가능하다. 
+    메소드는 클래스의 내부에서만 선언되기 때문에 메소드를 갖는 추상 메소드가 필요하다.
+    람다식은 그 중 인터페이스를 활용하는데,
+    클래스 내부에 하나의 추상 메소드가가 선언된  인터페이스만 람다식의 타깃이 될 수 있다.
+    이러한  인터페이스를  함수적 인터페이스라고 한다. "
+    
+2. Calculate이라는 이름의 인터페이스를 만들고,
+int 2개를 매개변수로 받는 multiTwoNumber 추상 메소드를 작성해주세요.
+int 2개를 매개변수로 받는 minusTwoNumber 추상 메소드를 작성해주세요.
+2-1. ApplicationCal이란 이름의 클래스를 만들고
+Calculate 인터페이스를 활용해 람다식 2개를 만들어 주세요.
+
+2-2.
+숫자1과 숫자2의 곱 : 500
+숫자1과 숫자2의 차 : -20
+가 출력되도록 결과를 출력해주세요.
+
+
+    public interface Calculate {
+    
+        @FunctionalInterface
+        public interface  Multiple {
+            int multipleTwoNumber (int a, int  b);
+        }
+    
+        @FunctionalInterface
+        public interface Minus {
+            int minusTwoNumber(int a, int b);
+        }
+    
+    }
+
+public static void main(String[] args) {
+
+        Calculate.Multiple multiple = (x, y) -> x * y;
+        Calculate.Minus minus = (x,y) -> x - y;
+
+        System.out.println("숫자1과 숫자2의 곱 : " + multiple.multipleTwoNumber(50,10));
+        System.out.println("숫자1과 숫자2의 차 : " + minus.minusTwoNumber(20,40));
+
+    }
+    
+    ===========
+    실행 결과 
+    숫자1과 숫자2의 곱 : 500
+		숫자1과 숫자2의 차 : -20
+
+
+=========================
+수업 내용 정리 
+
+enum 
+
+## 열거타입(enum) 이란?
+열거타입(enum) 이란 관련이 있는 상수의 집합의 **클래스**를 의미한다. 각각의 열거 상수는 열거 객체로 생성된다.
+
+- 상수란?
+    - 상수는 변하지 않는 수이다. 예를 들어 하루는 24시간이고 한 시간은 60분이다. 
+    이런 변하지 않는 것을 상수라고 하고 자바에서는 `final` 이라는 키워드로 선언한다.
+    - 상수는 값이 한번 정해지면 변경할 수 없다.
+    - 변수와 다르게 상수명은 모든 문자를 영어 대문자로 작성해야한다.
+    
+
+### 열거타입 선언 및 사용 방법
+
+enum 키워드를 활용하여 열거 타입을 선언할 수 있다.
+
+접근제어자 enum 열거체이름 {
+		상수명1, 상수명2, ... 상수명XX;		
+}
+
+public enum FoodsEnum {
+    MEAL_AN_BUTTER_KIMCHI_STEW, MEAL_MINT_SEAWEED_SOUP, MEAL_BUNGEOPPANG_SUSHI;
+}
+
+정의된 열거 타입을 사용하는 방법은 `열거타입이름.상수이름` 형식으로 사용하면 된다.
+
+public static void main(String[] args) {
+    if("MEAL_AN_BUTTER_KIMCHI_STEW".equals(FoodsEnum.MEAL_AN_BUTTER_KIMCHI_STEW.toString())){
+    }       
+}
+
+### 열거 타입 장점
+
+1. **열거 타입은 싱글톤 방식으로 구현되기 때문에 인스턴스의 생성이나 확장이 되지 않는다.** 
+즉, 인스턴스가 통제되며 하나만 존재하는 것이 보장된다.
+    
+    
+2. **열거 타입은 컴파일 타임 타입 안정성을 높여준다.**
+enumTest() 는 `FoodsEnum` 타입으로 받도록 선언해 두었기 때문에 다른 타입의 매개변수가 들어오는 경우 컴파일 에러를 발생시켜 준다.
+    
+    public enum FoodsEnum {
+    
+        MEAL_AN_BUTTER_KIMCHI_STEW(0),
+        MEAL_MINT_SEAWEED_SOUP(1),
+        MEAL_BUNGEOPPANG_SUSHI(2),
+    
+        DRINK_RADISH_KIMCHI_LATTE(0),
+        DRINK_WOOLUCK_SMOOTHIE(1),
+        DRINK_RAW_CUTTLEFISH_SHAKE(2);
+    
+        private final int value;
+    
+        FoodsEnum(int value) {
+            this.value = value;
+        }
+    }
+
+    public class EnumEx {
+    
+        private static final int MEAL_AN_BUTTER_KIMCHI_STEW = 0;
+        private static final int DRINK_RADISH_KIMCHI_LATTE = 0;
+    
+        public static void main(String[] args) {
+        
+            //boolean isTrue = enumTest(MEAL_AN_BUTTER_KIMCHI_STEW, DRINK_RADISH_KIMCHI_LATTE);     // 컴파일 에러 발생
+            boolean isTrue = enumTest(FoodsEnum.MEAL_AN_BUTTER_KIMCHI_STEW, FoodsEnum.DRINK_RADISH_KIMCHI_LATTE);
+            
+            System.out.println(isTrue ? "동일한 값" : "다른 값");
+        
+        }
+        
+        private static boolean enumTest(FoodsEnum foodsEnum1, FoodsEnum foodsEnum2){
+        
+            if(foodsEnum1 == foodsEnum2){
+                return true;
+            }
+        
+            return false;
+        
+        }
+    
+    }
+
+        
+
+1. **열거 타입은 상수 이름을 문자열로 출력할 수 있다.**
+    
+    public static void main(String[] args) {
+    
+        System.out.println(FoodsEnum.MEAL_AN_BUTTER_KIMCHI_STEW);
+        System.out.println(FoodsEnum.MEAL_MINT_SEAWEED_SOUP);
+        System.out.println(FoodsEnum.MEAL_BUNGEOPPANG_SUSHI);
+        System.out.println(FoodsEnum.DRINK_RADISH_KIMCHI_LATTE);
+        System.out.println(FoodsEnum.DRINK_WOOLUCK_SMOOTHIE);
+        System.out.println(FoodsEnum.DRINK_RAW_CUTTLEFISH_SHAKE);
+    
+    }
+
+    - 실행결과
+          MEAL_AN_BUTTER_KIMCHI_STEW
+        MEAL_MINT_SEAWEED_SOUP
+        MEAL_BUNGEOPPANG_SUSHI
+        DRINK_RADISH_KIMCHI_LATTE
+        DRINK_WOOLUCK_SMOOTHIE
+        DRINK_RAW_CUTTLEFISH_SHAKE
+        ```
+        
+    
+2. **열거 타입에 메소드나 필드를 추가 할 수 있다.**
+추가로 열거 타입은 근본적으로 불변이라 모든 필드는 final 이어야 한다
+    
+
+    public enum FoodsEnum {
+    
+        MEAL_AN_BUTTER_KIMCHI_STEW(0),
+        MEAL_MINT_SEAWEED_SOUP(1),
+        MEAL_BUNGEOPPANG_SUSHI(2),
+    
+        DRINK_RADISH_KIMCHI_LATTE(0),
+        DRINK_WOOLUCK_SMOOTHIE(1),
+        DRINK_RAW_CUTTLEFISH_SHAKE(2);
+    
+    		// 추가된 필드
+        private final int var = 10;
+    
+        private final int value;
+    
+        FoodsEnum(int value) {
+            this.value = value;
+        }
+    
+    		// 추가된 메소드
+        public void printVar() {
+            System.out.println("print var : " + var);
+        }
+    
+    }
+    ```
+    
+3. **열거 타입도 클래스이기 때문에 toString() 을 재정의하여 사용할 수 있다.**
+    
+
+    public enum FoodsEnum {
+    
+        ...
+    
+        @Override
+        public String toString() {
+            return this.name().toLowerCase();
+        }
+    }
+    ```
+    
+
+    public static void main(String[] args) {
+    
+        System.out.println(FoodsEnum.MEAL_AN_BUTTER_KIMCHI_STEW.toString());
+    
+    }
+    ```
+    
+    - 실행결과
+        
+        ```java
+        meal_an_butter_kimchi_stew
+        ```
+        
+4. **열거 타입에 선언된 상수 하나를 제거하더라도 클라이언트에 영향을 주지 않는다.**
+혹시나 삭제된 상수를 참조하고 있는 곳이 있다면 컴파일 에러를 출력해주기 때문에 안전하다.
+
+1. **열거 타입 내에 선언된 상수들을 순회할 수 있다.**
+    
+
+    public static void main(String[] args) {
+    
+        for(FoodsEnum food : FoodsEnum.values()){
+            System.out.println("food = " + food);
+        }
+    
+    }
+    ```
+    
+    - 실행결과
+        
+        ```
+        food = meal_an_butter_kimchi_stew
+        food = meal_mint_seaweed_soup
+        food = meal_bungeoppang_sushi
+        food = drink_radish_kimchi_latte
+        food = drink_wooluck_smoothie
+        food = drink_raw_cuttlefish_shake
+
+람다
+    
+## 람다식이란?
+
+메소드를 하나의 식(expression)으로 표현한 것이다.
+메소드를 람다식으로 표현하면 메소드 이름과 리턴값이 없어서 익명 함수라고도 할 수 있다.
+
+f(x, y) = x * y 식은 x와 y의 곱을 표현하는 함수 f다. 
+
+이를 람다식으로 변경하면 아래와 같아진다.
+(x, y) -> x * y
+‘=’ 이 → 로 바뀌게 되고 f 가 사라진 것을 볼 수 있다. 즉, 함수 이름을 빼고 → 이후로 식이 바로 오게 된다. 
+“메소드의 이름과 반환값이 없어진다” 는 의미는 익명 함수를 의미한다.
+
+## 1-2. 람다식이 필요한 이유?
+람다식의 가장 큰 장점은 **단순함 그리고 편함**이다. 
+람다식을 활용할 수 있게되면 컬렉션, 스트림을 연계해서 데이터를 쉽게 조작할 수 있게 된다.
+또한 불필요하게 반복되는 코드도 제거할 수 있게 된다. 
+
+## 1-3. 람다 표현식
+// 매개 변수 없는 경우
+() -> { ... }
+
+// 매개 변수 있는 경우
+(타입 매개변수, ...) -> { ... }
+
+람다 표현식에서 매개 변수 타입은 런타임 시에 자동으로 인식되기 때문에 매개변수 타입을 일반적으로 언급하지 않아도 된다.
+
+하나의 매개변수만 존재하는 경우 ( ) 는 생략할 수 있다. 실행문이 하나인 경우에 { } 는 생략 가능하다.
+
+
+# 2. 함수적 인터페이스(@FunctionalInterface)
+자바에서는 메소드를 따로 선언할 수 없다. 메소드는 항상 클래스의 내부에서만 선언되기 때문에 메소드를 가지고 있는 객체를 생성해야 한다.
+따라서 람다식은 단독으로 선언할 수 없다. 람다식은 익명 클래스처럼 **인터페이스 변수에 대입**된다. 
+인터페이스는 직접 객체화 할 수 없기 때문에 구현 클래스가 필요한데 람다식을 통해 익명 구현 객체를 생성하여 사용할 수 있다.
+람다식이 대입될 인터페이스를 람다식의 타깃 타입이라고 한다.
+하지만 모든 인터페이스가 람다식의 타깃 타입이 될 순 없다. 
+
+람다식은 하나의 메소드를 정의하기 때문에 두 개 이상의 추상 메소드가 선언된 인터페이스는 람다식을 이용해 객체를 생성할 수 없다.
+즉, **하나의 추상 메소드가 선언된 인터페이스만 람다식의 타깃 타입**이 될 수 있다. 
+이러한 인터페이스를 함수적 인터페이스(functional interface)라고 한다.
+컴파일러가 두 개 이상의 추상 메소드가 선언되었는지 체크해주는 어노테이션이 있다.
+`@FunctionalInterface` 어노테이션이다. 이 어노테이션은 옵션이다. 없어도 추상 메소드 하나만 있으면 함수적 인터페이스로 사용 가능하다.
+
+@FunctionalInterface
+public interface MyFunction {
+    public void methodA();
+    public void methodB();  // Error
+}
+
+자바 8에서는 빈번하게 사용되는 함수적 인터페이스를 `java.util.function` 표준 API 패키지로 제공한다.
+
+크게 `Consumer`, `Supplier`, `Function`, `Operator`, `Predicate` 로 구분된다.
+
+## 2-1. Consumer
+Consumer 함수적 인터페이스의 특징은 리턴 값이 없는 `accept()` 메소드를 가지고 있다는 것이다. 
+`accept()` 메소드는 단지 매개 변수로 넘어온 값을 소비하는 역할만 한다. 소비한다는 것은 리턴값이 없다는 말이다.
+
+| **인터페이스 명** | **추상 메소드** | **설명** |
+| Consumer<T> | void accept(T t) | 객체 T를 받아서 소비한다. |
+| BiConsumer<T, U> | void accept(T t, U u) | 객체 T, U를 받아 소비한다. |
+| intConsumer | void accept(int value) | int 값을 받아 소비한다. |
+| DoubleConsumer | void accept(double value) | double 값을 받아 소비한다. |
+| LongConsumer | void accept(long value) | long 값을 받아 소비한다. |
+| ObjIntConsumer<T> | void accept(T t, int value) | 객체 T와 int 값을 받아 소비한다. |
+| ObjDoubleConsumer<T> | void accept(T t, double value) | 객체 T와 double 값을 받아 소비한다. |
+| ObjLongConsumer<T> | void accept(T t, long value) | 객체 T와 long 값을 받아 소비한다. |
+
+public static void main(String[] args) {
+    Consumer<String> consumer = str -> System.out.println(str + " 이(가) 입력됨");
+    consumer.accept("람다 테스트");
+    BiConsumer<String, String> biConsumer = (str1, str2) -> System.out.println(str1 + ", " + str2 + " 이(가) 입력됨");
+    biConsumer.accept("람다", "테스트");
+}
+- 실행결과
+    람다 테스트 이(가) 입력됨
+    람다, 테스트 이(가) 입력됨
+ 
+## 2-2. Supplier
+Supplier 함수적 인터페이스는 매개변수가 없고 리턴 값이 있는 `getXXX()` 메소드를 가지고 있다.
+이 메소드는 실행 되면 호출한 곳으로 값을 리턴해준다.
+
+| **인터페이스 명** | **추상 메소드** | **설명** |
+| --- | --- | --- |
+| Supplier<T> | T get() | T 객체를 리턴한다. |
+| BooleanSupplier | Boolean getAsBoolean() | Boolean 값을 리턴한다. |
+| IntSupplier | int getAsInt() | int 값을 리턴한다. |
+| DoubleSupplier | double getAsDouble() | double 값을 리턴한다. |
+| LongSuplier | long getAsLong() | long 값을 리턴한다. |
+
+public static void main(String[] args) {
+
+    BooleanSupplier booleanSupplier = () -> {
+
+        int num = (int) (Math.random() * 10) + 1;
+        return num % 2 == 0 ? true : false;
+    };
+
+    for(int i = 0 ; i < 10 ; i++){
+        System.out.println("랜덤으로 true, false 출력 : " + booleanSupplier.getAsBoolean());
+    }
+}
+
+
+- 실행결과
+    랜덤으로 true, false 출력 : false
+    랜덤으로 true, false 출력 : true
+    랜덤으로 true, false 출력 : false
+    랜덤으로 true, false 출력 : false
+    랜덤으로 true, false 출력 : false
+    랜덤으로 true, false 출력 : false
+    랜덤으로 true, false 출력 : true
+    랜덤으로 true, false 출력 : true
+    랜덤으로 true, false 출력 : true
+    랜덤으로 true, false 출력 : false
+
+
+## 2-3. Function
+Function 함수적 인터페이스의 특징은 매개변수와 리턴값이 있는 `applyXXX()` 를 가지고 있다는 것이다. 이 메소드들은 매개변수를 리턴값으로 매핑하는 역할을 한다. 매개 변수 타입과 리턴 타입에 따라서 다양한 메소드들이 있다.
+
+| **인터페이스 명** | **추상 메소드** | **설명** |
+| Function <T, R> | R apply(T t) | 객체 T를 객체 R로 매핑한다. |
+| BiFunction <T, U, R> | R apply(T t, U u) | 객체 T와 U를 객체 R로 매핑한다. |
+| IntFunction<R> | R apply(int value) | int를 객체 R로 매핑한다. |
+| IntToDoubleFunction | double applyAsDouble(int value) | int를 double로 매핑한다. |
+| IntToLongFunction | long applyAsLong(int value) | int를 long으로 매핑한다. |
+| DoubleFunction<R> | R apply(double value) | double을 객체 R로 매핑한다. |
+| LongToDoubleFunction | double applyAsDouble(long value) | long을 double로 매핑한다. |
+| LongToIntFunction | int applyAsInt(long value) | long을 int로 매핑한다. |
+| ToDoubleBiFunction<T, U> | double applyAsDouble(T t, U u) | 객체 T와 U를 double로 매핑한다. |
+| ToDoubleFunction<T> | double applyAsDouble(T value) | 객체 T를 double로 매핑한다. |
+| ToIntBiFunction<T, U> | int applyAsInt(T t, U u) | 객체 T와 U를 int로 매핑한다. |
+| ToIntFunction<T> | int applyAsInt(T t) | 객체 T를 int로 매핑한다. |
+| ToLongBiFunction<T, U> | long applyAsLong(T t, U u) | 객체 T와 U를 long으로 매핑한다. |
+| ToLongFunction<T> | long applyAsLong(T t) | 객체 T를 long으로 매핑한다. |
+
+
+public static void main(String[] args) {
+
+    Function<Integer, String> intToStringFunction = intValue -> String.valueOf(intValue);
+    String str = intToStringFunction.apply(1234567890);
+
+    System.out.println(str);
+    System.out.println(str.getClass().getName());
+
+    ToIntFunction<String> stringToIntFunction = strValue -> Integer.parseInt(strValue);
+    int number = stringToIntFunction.applyAsInt("1234567890");
+
+    System.out.println(number);
+    System.out.println(((Object) number).getClass().getName());
+}
+
+- 실행결과
+   
+    1234567890
+    java.lang.String
+    1234567890
+    java.lang.Integer
+
+
+## 2-4. Operator
+Operator 함수적 인터페이스는 Function 과 똑같이 작동한다. 매개변수와 리턴값이 있는 `applyXXX()` 메소드를 가지고 있다. 
+Function 과 다른 점은 매개변수를 리턴타입으로 매핑하는 역할이 아닌 매개변수를 이용해 연산을 한 후 동일한 타입으로 리턴해주는 역할을 한다.
+
+| **인터페이스 명** | **추상 메소드** | **설명** |
+| BinaryOperator<T> | BiFunction<T, U, R>의 하위 인터페이스 | T와 U를 연산하여 R로 리턴한다. |
+| UnaryOperator<T> | Function<T, R> 의 하위 인터페이스 | T를 연산한 후 R로 리턴한다. |
+| DoubleBinaryOperator | double applyAsDouble(double, double) | 매개변수 두 개를 활용하여 double 타입으로 리턴한다. |
+| DoubleUnaryOperator | double applyAsDouble(double) | 매개변수 한 개를 활용하여 double 타입으로 리턴한다. |
+| IntBinaryOperator | int applyAsInt(int, int) | 두 개의 int를 연산하여 int 타입으로 리턴한다 |
+| IntUnaryOperator | int applyAsInt(int) | 한 개의 int를 연산하여 int 타입으로 리턴한다. |
+| LongBinaryOperator | long applyAsLong(long, long) | 두 개의 long을 연산하여 long 타입으로 리턴한다. |
+| LongUnaryOperator | long applyAsLong(long) | 한 개의 long을 연산하여 long 타입으로 리턴한다. |
+
+public class LamdaEx {
+
+    private static int[] intArr = {64, 90, 80, 92, 100};
+
+    public static void main(String[] args) {
+
+        int max = method((x, y) -> Math.max(x, y));
+        System.out.println("가장 큰 값 : " + max);
+
+        int min = method((x, y) -> Math.min(x, y));
+        System.out.println("가장 작은 값 : " + min);
+
+    }
+
+    public static int method(IntBinaryOperator intBinaryOperator){
+
+        int result = intArr[0];
+
+        for (int val : intArr){
+            result = intBinaryOperator.applyAsInt(result, val);
+        }
+
+        return result;
+
+    }
+
+}
+
+
+- 실행결과
+    가장 큰 값 : 100
+    가장 작은 값 : 64
+
+
+## 2-5. Predicate
+
+Predicate 함수적 인터페이스는 매개 변수와 boolean 리턴 값이 있는 `testXXX()` 를 가지고 있다.
+이 메소드들은 매개변수 값을 이용해 true 또는 false 를 리턴하는 역할을 한다.
+
+| **인터페이스 명** | **추상 메소드** | **설명** |
+| Predicate<T> | Boolean test(T t) | 객체 T를 조사하여 true, false를 리턴한다. |
+| BiPredicate<T, U> | Boolean test(T t, U u) | 객체 T와 U를 조사하여 true, false를 리턴한다. |
+| DoublePredicate | Boolean test(double value) | double 값을 조사하여 true, false를 리턴한다. |
+| IntPredicate | Boolean test(int value) | int 값을 조사하여 true, false를 리턴한다. |
+| LongPredicate | Boolean test(long value) | long 값을 조사하여 true, false를 리턴한다. |
+
+
+public static void main(String[] args) {
+
+    int[] intArr = {90, 67, 87, 99, 100};
+
+    int testCut = 80;
+
+    IntPredicate intPredicate = number -> number >= testCut;
+    
+    for(int num : intArr){
+        if(intPredicate.test(num)){
+            System.out.println(num + " 은 " + testCut + " 보다 높으므로 합격");
+        }
+        else {
+            System.out.println(num + " 은 " + testCut + " 보다 낮으므로 불합격");
+        }
+    }
+    
+}
+
+
+- 실행결과
+    90 은 80 보다 높으므로 합격
+    67 은 80 보다 낮으므로 불합격
+    87 은 80 보다 높으므로 합격
+    99 은 80 보다 높으므로 합격
+    100 은 80 보다 높으므로 합격
