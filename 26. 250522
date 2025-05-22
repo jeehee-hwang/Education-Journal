@@ -1,0 +1,53 @@
+
+챗gpt의 도움을 받아서 정리를 해 보았다. 
+
+✅ JDBC에서 DB를 연결할 때 중요한 점 3가지
+
+1. 드라이버 로딩
+DB 종류에 맞는 JDBC 드라이버가 필요합니다.
+예: Class.forName("com.mysql.cj.jdbc.Driver");
+드라이버가 없으면 DB와 연결 자체가 되지 않습니다.
+
+2. DB 연결 정보 정확성
+URL, 사용자명, 비밀번호가 정확해야 합니다.
+예: jdbc:mysql://localhost:3306/mydb, user, password
+오타나 포트 번호 오류로 연결 실패가 자주 발생합니다.
+
+3. 리소스 관리
+연결(Connection), 명령(Statement), 결과(ResultSet)은 사용 후 반드시 닫아야 합니다.
+자원을 닫지 않으면 메모리 누수와 커넥션 고갈이 발생할 수 있습니다.
+
+🔑 JDBC에서 가장 많이 쓰는 문법 5가지
+1. DB 드라이버 로딩
+Class.forName("com.mysql.cj.jdbc.Driver");
+JDBC 드라이버를 메모리에 로드합니다.
+
+2. DB 연결
+Connection conn = DriverManager.getConnection(
+    "jdbc:mysql://localhost:3306/mydb", "user", "password");
+DB와 연결하여 Connection 객체를 얻습니다.
+
+3. SQL 실행
+Statement stmt = conn.createStatement();
+ResultSet rs = stmt.executeQuery("SELECT * FROM users");
+SQL을 실행하고 결과를 ResultSet으로 받습니다.
+또는 PreparedStatement (보안/성능 개선):
+
+PreparedStatement pstmt = conn.prepareStatement(
+    "SELECT * FROM users WHERE id = ?");
+pstmt.setInt(1, 10);
+ResultSet rs = pstmt.executeQuery();
+
+4.결과 처리
+while (rs.next()) {
+    String name = rs.getString("name");
+    int age = rs.getInt("age");
+}
+결과를 한 행씩 반복하면서 컬럼 값 추출
+
+5. 리소스 닫기
+rs.close();
+stmt.close();
+conn.close();
+역순으로 자원 해제 (ResultSet → Statement → Connection)
+
