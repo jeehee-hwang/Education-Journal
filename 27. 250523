@@ -1,0 +1,97 @@
+흐름을 알고 이해하는 것이 중요하다. 
+
+수업진도 깃허브 (07_mybatis /section01 - chap03 / section01 / xmlconfig  )
+
+### Mybatis란
+
+- 데이터의 입력, 조회, 수정, 삭제(CRUD)를 보다 편하게 할 수 있도록 xml로 구조화한 Mapper설정 파일을 통해 JDBC를 구현한 영속성 프레임워크이다.
+
+- 조회 흐름 
+Application → MenuController → MenuService → MenuDAO → mybatis mapper.xml → DB
+                             ↑                                        ↓
+                        PrintResult  ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
+
+
+클래스 실행 순서
+1. Application 에서 사용자가 1번을 선택 → menuController.selectAllMenu() 호출
+2. MenuController 에서 menuService.selectAllMenu() 호출
+3. MenuService 에서 Template.getSqlSession() 호출 → DB 연결 > menuDAO selectAllMenu(sqlSession) 호출
+4. MenuDAO sqlSession.selectList("MenuMapper.selectAllMenu") 실행 > mapper.xml 파일에 정의된 SQL 실행
+5. menu-mapper.xml 에서 작성한 SELECT * FROM TBL_MENU WHERE ORDERABLE_STATUS = 'Y' 실행 > DB에서 실제 데이터 조회
+6. DB (Database) 에서 TBL_MENU 테이블에서 조건에 맞는 데이터 반환
+7. 다시 거꾸로 전달됨
+    mapper가 조회된 DB 결과를 → MenuDTO 객체로 바꿔서 전달 (이게 MyBatis가 하는 핵심 역할!)
+    MenuDAO → MenuService → MenuController → PrintResult 로 올라감
+8. PrintResult에서 System.out.println()으로 메뉴 목록 출력
+
+
+카테고리를 나누는 이유  - 유지보수가 쉬워진다. 
+
+오늘 수업 내옹의 카테고리 (클래스)
+Application	시작점	"사용자 입력 받기"	
+MenuController	중간 다리	"요청을 보고 뭘 할지 정함"	
+MenuService	처리자	"실제로 처리함 (로직)"	
+MenuDAO	DB랑 연결	"진짜 데이터 저장, 검색"	
+MenuDTO	데이터 그릇	"메뉴 정보를 담는 상자"	
+PrintResult	출력담당	"결과를 화면에 보여줌"	
+Template	DB 도우미	"DB 연결 도구"	
+menu-mapper.xml	SQL 연결	"DB에서 어떤 명령 쓸지 적은 문서"	
+mybatis-config.xml	전체 환경설정	"MyBatis 설정파일"	
+
+문법 및 클래스 등 
+  DTO (Data Transfer Object) - DB에서 가져온 데이터를 담는 상자 (데이터 저장용 클래스)
+  DAO (Data Access Object) - DAO는 MyBatis를 써서 SQL을 실행, SQL이 실행되고 DTO에 결과가 담긴다 
+  
+  Environment class - 데이터베이스 접속에 관한 환경 설정 정보를 가진 객체로, MyBatis 환경 설정 객체를 생성하는 데 사용한다.
+    Environment environment = new Environment(환경 정보 이름 , 트랜잭션 매니저 종류, 커넥션풀 사용 여부);
+    
+ Configuration class - 환경 설정 정보 Environment 객체를 가지고 생성한 MyBatis 설정 객체로, 
+                       DB 접속 관련 정보, mapper 등록, 별칭 등록 등 myBatis 전역 설정 정보를 담고 있다.
+     Configuration configuration = new Configuration(environment);
+      configuration.addMapper(Mapper.class); 
+      
+SqlSessionFactory - SqlSession 객체를 생성하기 위한 팩토리 역할을 수행하는 인터페이스, 
+                     싱글톤 패턴 등을 이용하여 어플리케이션 스코프로 사용하는 것이 좋다.
+   SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);                  
+SqlSessionFactoryBuilder - SqlSessionFactory 인터페이스 타입의 하위 구현 객체를 생성하기 위한 빌드 역할을 수행
+    SqlSessionFactoryBuilder 메소드
+    | **method 구분** | **설명** |
+    | build(InputStream) | config.xml 파일만 불러옴 |
+    | build(InputStream, String)  | config.xml 파일과 지정한 데이터베이스를 불러옴 |
+    | build(InputStream, Properties) | config.xml파일과 property 로 설정한 내용으로 불러옴(“${*key*}”) |
+    | build(InputStream, String, Properties) | config.xml 파일과 지정한 데이터베이스, properties 파일 불러옴 |
+    | build(configuration) | configuration 객체에 설정한 내용을 불러옴 |
+
+SqlSession - 멀티 스레드 환경에서 안전하게 사용할 수 없으므로(= Thread-safe 하지 않음), 스레드마다 생성하여 공유되지 않도록 해야함
+            요청 시 생성하고 요청 처리가 완료되면 close하는 스코프를 권장
+   
+   - SqlSession sqlSession = sqlSessionFactory.openSession(false);
+       > SqlSessionFactory의 openSession() 메소드를 사용하여 SqlSession 인터페이스 타입의 객체를 반환받는다.
+     
+     openSession() 메소드
+      | **method 구분** | **설명** |
+      | openSession() | 기본값을 통해 SqlSession 생성 |
+      | openSession(Boolean) | - SqlSession 생성 시 AutoCommit 여부 지정 - 기본값 = true |
+      | openSession(Connection) | - 직접 생성한 Connection 객체를 이용해 SqlSession 생성 -  기본값 = X |
+      | openSession(ExecutorType) | - 쿼리 실행 시 PreparedStatement의 재사용여부 설정 - 기본값 = ExecutorType.SIMPLE |
+   
+    SqlSession은 사용 후 반드시 close()하여 반납 <sqlSession.close();>  
+
+    mapper.xml에서 선언한 쿼리 구문을 SqlSession에서 실행하는 메소드는 총 6가지
+    | **method명** | **설명** |
+    | Object selectOne(String mapper, Object param) | 하나의 객체만을 받을 때 사용 |
+    | List<E> selectList(String mapper, Object param) | 결과에 대한 값을 List로 받을 때 사용 |
+    | Map<K,V> selectMap(String mapper, Object param, String mapKey) | 결과에 대한 값을 Map으로 받을 때 사용 (마지막 인자로 key로 사용될 컬럼 명시) |
+    | int insert(String mapper, Object param) | Database에 데이터를 입력할 때 사용 |
+    | int update(String mapper, Object param) | Database의 데이터를 수정할 때 사용 |
+    | int delete(String mapper, Object param) | Database의 데이터를 삭제할 때 사용 |
+      
+  DB 저장 성공 여부에 따라 commit/rollbac
+  commit(): DB에 최종 저장 / rollback(): 저장 취소
+
+xml
+  <resultMap>: DB 결과와 Java 객체 필드를 연결해줌
+  <select>, <insert>, <update>, <delete>: 각각 SQL 수행문
+
+
+
