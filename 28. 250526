@@ -1,0 +1,59 @@
+mybatis, 인텔리제이에서 xml, java 방식 차이점 
+
+자바방식은 인터페이스로 Mapper를 만듬
+서비스는 동일하나 자바방식에서는 Mapper가 들어감
+
+ xml, java 혼용해서 많이 사용함 
+
+마무리 정리 요약표
+구성 요소 |	하는 일
+DTO |	데이터를 담는 클래스 (상자)
+DAO	| DB와 직접 대화 (MyBatis SQL 호출)
+Service |	전체 로직 조율 (commit/rollback 포함)
+Controller |	사용자 요청 받아서 서비스 호출
+Application |	프로그램 시작점, 사용자와 인터페이스
+mapper.xml |	SQL 저장소 (MyBatis 전용 문법 사용)
+MyBatis	| SQL 실행 도와주는 도구 (JDBC보다 편하게 DB 접근 가능)
+
+
+XML과 Java를 혼용해서 MyBatis와 같은 프레임워크에서 많이 사용하는 이유는 각각의 장점을 살리기 위함입니다. 
+
+1. SQL 분리의 이점 (유지보수 용이)
+XML: SQL 쿼리를 XML 파일로 분리하면 자바 코드와 SQL을 명확히 분리할 수 있어 가독성과 유지보수성이 좋아짐.
+예: 복잡한 SQL을 mapper.xml에 정의 → Java 클래스는 로직에만 집중
+
+2. 동적 SQL 처리가 쉬움
+MyBatis는 <if>, <choose>, <foreach> 같은 동적 SQL 태그를 지원.
+복잡한 조건이나 반복 쿼리를 XML로 쉽게 구현 가능.
+
+xml
+<select id="searchMenu" resultType="Menu">
+  SELECT * FROM menu
+  <where>
+    <if test="name != null">
+      name = #{name}
+    </if>
+    <if test="category != null">
+      AND category = #{category}
+    </if>
+  </where>
+</select
+
+3. 유연한 SQL 커스터마이징
+SQL이 자바 코드에 하드코딩되어 있으면 바꾸기 어려움.
+XML에 있으면 DBA나 백엔드 개발자가 비즈니스 로직을 건드리지 않고 SQL만 수정 가능.
+
+4. Java 코드가 간결해짐
+SQL이 XML로 빠져나가면서 DAO/Service 클래스는 단순한 메서드 호출 로직만 작성하게 되어 코드가 간결해짐.
+
+5. 다양한 설정/매핑 가능
+매핑 정보, 컬럼 이름 ↔ 필드 이름 매핑 등도 XML에서 정의 가능.
+복잡한 매핑 로직도 XML에서 처리 가능.
+
+🔄 그래서 XML은 SQL 담당, Java는 비즈니스 로직 담당
+→ 역할 분리가 명확해져서 유지보수와 협업이 쉬움.
+
+📌 참고: Java 코드 안에서 SQL 쓰는 방법도 있음
+Annotation 방식 (@Select 등): 간단한 쿼리에 적합
+복잡한 조건/동적 쿼리는 XML이 훨씬 유리
+
