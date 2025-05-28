@@ -1,0 +1,154 @@
+
+협업으로 계산기 만들기 연습했다 
+내가 맡은 부분은 뺄샘이였다. 
+
+* 깃허브에서 이슈를 작성하고 push 후 commit이 어렵다. 좀 더 많이 다뤄봐야겠다. 
+* 자바와 자바스크립트 등 복습을 꾸준히 해야겠다. 
+
+계산기 만들기 연습
+
+📌 프로젝트 소개
+사칙연산을 수행하는 간단한 계산기를 구현한다.
+계산기는 다음 연산을 정수 기준으로 처리한다.
+
+덧셈 (+)
+뺄셈 (-)
+곱셈 (*)
+나눗셈 (/)
+나머지 (%)
+
+협업 결과 =================
+
+package com.ohgiraffers.run;
+
+import com.ohgiraffers.substraction.Substraction;
+import com.ohgiraffers.multiply.Multiply;
+import com.ohgiraffers.sum.Sum;
+import com.ohgiraffers.mod.Mod;
+import com.ohgiraffers.division.Division;
+
+import java.util.Scanner;
+
+public class Application {
+
+    public static void main(String[] args) {
+      
+        Sum sum = new Sum();
+        Substraction substraction = new Substraction();
+        Multiply multiply = new Multiply();
+        Mod mod = new Mod();
+        Division division = new Division();
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("1. 덧셈");
+        System.out.println("2. 뺄셈");
+        System.out.println("3. 곱셈");
+        System.out.println("4. 나눗셈");
+        System.out.println("5. 나머지 구하기");
+        System.out.print("메뉴를 선택해주세요: ");
+
+        int no = sc.nextInt();
+
+        switch (no) {
+            case 1:
+                System.out.println("더할 첫 번째 숫자를 입력해주세요.");
+                int sumNum1 = sc.nextInt();
+                System.out.println("더할 두 번째 숫자를 입력해주세요.");
+                int sunNum2 = sc.nextInt();
+
+                System.out.println(sumNum1 + "+" + sunNum2 + "=" + sum.calculateSum(sumNum1,sunNum2));
+
+            case 2:
+
+                System.out.print("첫 번째 숫자를 입력하세요: ");
+                int substractionNum1 = sc.nextInt();
+
+                System.out.print("두 번째 숫자를 입력하세요: ");
+                int substractionNum2 = sc.nextInt();
+
+                System.out.println("뺄셈 결과 : " + (substraction.calculateSubstraction(substractionNum1, substractionNum2)));
+
+            case 3:
+                System.out.print("첫 번째 정수 입력: ");
+                int num1 = sc.nextInt();
+                System.out.print("두 번째 정수 입력: ");
+                sc.nextLine();
+                int num2 = sc.nextInt();
+
+                System.out.println("곱셈 결과: " + (multiply.calculateMultiply(num1, num2)));
+            case 4:
+                System.out.println("첫번째 숫자 입력하세요 : ");
+                int divNum1 = sc.nextInt();
+                System.out.println("두번째 숫자 입력하세요 : ");
+                int divNum2 = sc.nextInt();
+
+                System.out.println(division.calculateDivision(divNum1,divNum2));
+            case 5:
+                System.out.println("나누어지는 수를 입력하세요 : ");
+                int dividend = sc.nextInt();
+                System.out.println("나누는 수를 입력하세요 : ");
+                int divisor = sc.nextInt();
+
+                int modeResult = mod.caculateMod(dividend, divisor);
+                System.out.println(modeResult);
+            default:
+        }
+    }
+}
+
+package com.ohgiraffers.sum;
+
+public class Sum {
+    public int calculateSum(int a, int b) {
+        return a + b;
+    }
+}
+
+package com.ohgiraffers.substraction;
+
+public class Substraction {
+
+    public int calculateSubstraction(int a, int b) {
+        return a - b;
+
+    }
+}
+
+package com.ohgiraffers.multiply;
+
+public class Multiply {
+
+    public int calculateMultiply(int a, int b) {
+
+        return a * b;
+    }
+}
+
+package com.ohgiraffers.division;
+
+import org.w3c.dom.ls.LSOutput;
+
+import java.util.Scanner;
+
+public class Division {
+
+   public static int calculateDivision(int num1, int num2) {
+        return num1/num2;
+    }
+}
+
+package com.ohgiraffers.mod;
+
+public class Mod {
+    public int caculateMod(int a, int b) {
+        int result = 0;
+        try {
+            result = a % b;
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+}
