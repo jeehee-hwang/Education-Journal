@@ -1,0 +1,240 @@
+forward, redirect 차이점 
+1. url 주소 
+forward는 url 주소가 달라지지 않는다. 
+ ->  포워드는 클라이언트가 요청을 보냈을 때 서버 쪽에서 혼자 처리하는 것이 아니라 또 다른 back에게 일을 넘기는 것이다. 
+     포워드의 경우 클라이언트는 서버에서 서블릿이 혼자 일을 처리했는지, 다른 서블릿에게 일을 위임했는지 알 필요가 없다. 
+     그래서 포워드가 실행되면 url주소는 바뀌지 않는다.
+
+redirect는 url 주소가 달라진다. 
+ -> 리다이렉트는 클라이언트가 서버에게 요청을 보내면 서버는 어떠한 일을 처리하고 클라이언트에게 새롭게 요청할 곳을 알려준다. 
+    그래서 리다이렉트의 결과는 실제 실행한 뒤에 url 주소가 달라진다.
+
+2. request, response 객체 생성
+
+실제 클라이언트가 서버에게 요청을 하면 반드시 생성되는 객체가 request와 response이다. 
+요청이 들어와서 응답을 할 때까지 계속 유지가 되어야 한다. 
+
+forward는 한번만 생성된다. 
+   
+redirect는 request, response 객체가 여러 번 생성된다. 
+  -> 요청과 응답이 여러번 실행되기 때문에 request, response 객체가 여러 번 만들어진다.
+
+
+** Forward vs Redirect
+
+* Forward 
+  Forward 메서드는 웹 애플리케이션의 한 서블릿에서 다른 리소스로 요청을 전달하며, 
+  이 리소스는 다른 서블릿, JSP 페이지 또는 HTML 파일이 될 수 있습니다. 
+  브라우저로 요청을 전달을 하는 것이 아니라 서버 내의 다른 리소스를 호출합니다.
+  Forward는 요청 정보를 WAS 내에서 다른 리소스로 전달합니다. 
+  요청 정보를 함께 전달하여 다른 리소스에서 이를 처리할 수 있습니다. 
+  페이지 이동이 없이 WAS 내부에서 다른 리소스를 호출하기에 속도가 Redirect보다 빠릅니다. 
+  내부에서 forward 하기 때문에 최초 요청한 URL이 변경되지 않습니다.
+
+ 
+* Redirect
+  Redirect 메서드는 요청을 브라우저로 전달하여 다른 웹 애플리케이션을 요청합니다. 
+  Redirect는 같은 URL을 호출하더라도 request에 있는 정보를 사용하지 않고 새롭게 요청합니다.
+  Redirect는 요청을 Web Browser에게 전달하여 새로 요청하게 만듭니다. 
+  덕분에 forward와 달리 WAS 서버와 Web Browser 간에 두 번의 통신이 일어나게 되어 forward보다 속도가 느립니다. 
+  그리고 새로운 URL로 요청하기 때문에 request 정보가 기본적으로 전달되지 않습니다. 
+  그러나 forward와 달리 아래처럼 외부에 있는 다른 서버나 혹은 같은 서버에서도 콘텍스트가 다른 URL에 요청을 redirect 할 수 있습니다.
+  조금 더 Redirect 과정을 상세히 들여다보면 Web Browser에서 WAS로 check.jsp를 요청합니다.
+  처리 결과에 따라서 응답으로 main.jsp로 Redirect 하라고 Response를 보냅니다. 
+  그러면 HTTP 응답 코드 302를 받은 Web Browser는 함께 받은 Location인 main.jsp를 다시 요청합니다.
+  마지막으로 요청을 받은 서버에서 main.jsp를 Response로 결과를 돌려보냅니다.
+
+  <%
+      // 사용자 처리
+      
+      response.sendRedirect("main.jsp");  // main.jsp로 redirect
+      
+      // 사용자 처리 계속
+  %>
+     
+  위의 코드는 redirect의 예제, 파일에서 처리 과정에서 다른 페이지로 redirect 하는 코드입니다.
+  
+  한 가지 주의할 점은 jsp 코드에서 response.sendRedirect를 호출하더라도 남은 페이지는 계속 실행이 됩니다. 
+  따라서 조건문을 사용하여 남은 코드 수행 중 오류가 발생하지 않도록 처리하거나 페이지 마지막 부분에서 호출해야 합니다.
+
+<%
+    // 사용자 처리
+    
+    if (조건식) {
+        response.sendRedirect("main.jsp");  // main.jsp로 redirect
+    } else {
+        // 사용자 처리 계속
+    }
+%>
+
+**  정리 
+* Forward	
+- Response 처리의 주체는 WAS, WAS가 Request를 컨텍스트 내부에서 변경하고 다른 리소스에서 응답을 처리. 
+- One Resource(URL기반: 컨텍스트 내의 JSP, Servlet), to Other Resource(URL기반: 컨텍스트 내의 JSP, Servlet, HTML 등)
+- RequestDispatcher.forward( );
+- 라우저의 영향을 받지 않음. 웹 컨테이너 내부에서 동작. request정보가 유지되어 조회할 수 있음.
+- 비즈니스 로직 처리에 주로 사용
+- 서버에서 처리하므로 지연이 일어나지 않으며 redirect보다 더 빠름
+- 처음 요청 URL이 변경되지 않음
+- 같은 컨텍스트에 있는 Resource만 사용 가능
+
+ * Redirect
+- Response 처리의 주체는 Web Browser, WAS에서 받은 Response로 새로운 URL을 Request.
+- URL기반의 모든 주소
+- HttpServeltResponse.SendRedirect( );
+- 클라이언트 혹은 브라우저가 처리, URL을 기반으로 새롭게 서버에 요청
+- 페이지 요청을 다른 페이지로 전환
+- 브라우저가 요청을 처리하므로 상황에 따라 지연이 발생할 수 있음. 
+- 요청 변환에 따라 다른 URL로 변경될 수 있음
+- 다른 컨텍스트, 다른 서버로 변경 가능
+
+
+* Session & Cookie
+
+ * Cookie
+   - 사용자 컴퓨터에 데이터를 텍스트 파일 형태로 저장하는 기술, 필요 시에 저장한 정보를 서버와 공유하여 정보 유지 
+   - 서블릿에 쿠기 정보 설정 -> 쿠키를 클라이언트가 가지고 있으면서 다른 서블릿에 요청할 때 담아 보냄 
+   - 장점 : 간단하게 이용 가능 
+   - 단점 : 보안 취약함 ( 공용PC를 사용하거나 url에 일부 데이터를 포함하는 경우) 
+
+   Cookie 설정 및 전송
+  - Cookie 쿠키명 = new Cookie('name','value');
+  - 생성된 Cookie의 설정값을 지정 (setMaxAge(int expiry), setPath(String uri), setDomain(String domain))
+  - response.addCookie(Cookie cookie)  
+  
+  전송한 Cookie 활용
+  - Cookie[] list = HttpRequest.getCookies();
+  - for(Cookie c : list) {
+  	System.out.println(c.getName());
+  	System.out.println(c.getValue());
+    }
+
+  
+  * Session
+   - 서버에 데이터를 저장하는 기술
+   - 클라이언트에는 Session ID를 부여한다. 
+     클라이언트가 요청 시 Session ID를 보내면 일치하는 Session정보를 컨테이너가 생성하여 그 객체의 데이터를 사용할 수 있다.
+     즉, 브라우저마다 제공하는 HashMap으로 서버에서 클라이언트에게 제공한다. 
+     Session에 값을 넣으면 모든 서블릿에서 해당 Session ID로 고유 공간을 찾아 값을 공유해 사용할 수 있다.
+  
+  Session 생성
+  - HttpSession SessionID = HttpServletRequest.getSession(); 
+  - HttpRequest.getSession(boolean);
+
+  Session 설정 및 호출
+  - SessionID.setAttribute('이름','값(Obj)'); //Session 데이터 설정
+  - SessionID.setMaxInactiveInterval(숫자);   //Session 유지시간 설정
+  - HttpSession SessionID = HttpServletRequest.getSession();
+  - SessionID.getAttribute('이름'); // 데이터 호출
+
+   Session 데이터 삭제 방법 
+  - session.removeAttribute("속성명");
+  - session.invalidate();
+
+데이터 상태 저장 영역   
+1. Page scope : 하나의 Servlet, 하나의 Class에서만 공유 가능하다.
+2. Request scope : forward에 한정해 공유할 수 있는 범위이다.
+3. Session scope : redirect 방식에서도 활용할 수 있는 범위로 대표적으로 로그인 정보가 이 영역에 속한다. 사용자가 사용하는 모든 페이지에서 사용자의 정보를 가지고 있어야 하기 때문이다.
+4. Application scope : 브라우저별 정보보다 넓은 범위이다.
+
+* Filter
+  - javax.servlet.Filter Interface를 상속 받아 구현하는 Class이다.
+  - HTTP 요청과 응답 사이에서 전달되는 데이터를 가로채어, 서비스에 맞게 변경하고 걸러내는 필터링 작업을 수행한다.
+  - 필터 설정에 따라 해당하는 요청 및 응답 시에 반드시 거쳐야 하며, 
+    비밀번호 암호화 처리, 인코딩 설정 등 공통 관리에 해당하는 기능을 수행할 수 있다
+
+  Servlet Filter 처리 내용
+  - Request에 대한 처리
+    - 보안 관련 사항, 요청 header와 body 형식 지정, 요청에 대한 log 기록 유지
+  - Response에 대한 처리
+    - 응답 stream 압축, 응답 stream 내용 추가 및 수정, 새로운 응답 작성
+       + 여러 가지 필터를 연결(= chain, 서로 호출)하여 사용할 수 있다.
+
+  * fliter 사이 
+       public FirstFilter() {
+        /* 필터는 톰캣을 start하는 시점부터 인스턴스를 미리 생성한다. */
+        System.out.println("FirstFilter 인스턴스 생성!");
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        /* 필터 인스턴스가 최초 생성될 때 호출되는 메소드 */
+        System.out.println("Filter init 호출");
+    }
+
+    @Override
+    public void destroy() {
+        /* 필터 인스턴스가 소멸될 때 호출되는 메소드(= 톰캣 종료 시)*/
+        System.out.println("Filter destroy 호출");
+    }
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        /* servlet으로 request가 전달되기 전에 요청을 가로채는 역할을 하는 메소드 */
+        System.out.println("filter doFilter() 호출");
+
+        /* 필터에서 처리할 코드를 작성한다. */
+
+        /* 처리를 한 뒤 다음 필터 혹은 서블릿의 doGet/doPost를 호출한다. */
+        filterChain.doFilter(servletRequest, servletResponse);
+
+        /* 서블릿에서 처리 후에 다시 수행할 내용이 있으면 작성한다. */
+        System.out.println("servlet 요청 수행 완료!");
+    }    
+
+* jsp
+ <!-- 1. 페이지 지시자 태그 --> : <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+ <!-- 2. 주석 태그 -->
+ <!-- --> html 주석은 클라이언트 노출
+ <%-- --%> jsp 주석은 클라이언트에게 노출되지 않는다. > f12키로 확인 가능 
+
+  <!-- 3. 선언 태그 -->
+  <!-- 서블릿으로 변환 시 선언 태그 내에 작성한 내용을 필드로 선언한다. --> <%! 내용 %>
+  <%!
+      private String name;
+      private int age;
+  %>
+
+  <!-- 4. scriptlet 태그 --> <% 내용 %>
+  <% // 간단한 자바 코드를 작성할 수 있는 부분이다.
+      name = "홍길동";
+      age = 20;
+
+      System.out.println("name = " + name);
+      System.out.println("age = " + age);
+
+      for(int i = 0; i < name.length(); i++) {
+          System.out.println(name.charAt(i));
+      }
+  %>
+  
+    <!-- 5. expression 태그 --> <%= 내용 %>
+    <!-- PrintWriter를 이용하여 브라우저에 값을 내보내 브라우저에서 보여지게 한다. -->
+    <!-- 자바 코드로 변환 시 out.print(); 괄호 안에 expression 태그 내에 작성한 내용이 들어간다.
+         정상적으로 출력한 값을 작성하는 경우 out.print(name); 이런 식으로 표현되는데
+         expression 태그 내에 세미콜론을 작성하면 out.print(name;); 형태가 되므로 compile 에러가 발생한다.  -->
+    name : <%= name %><br>
+    age : <%= age %>
+
+ 
+  지시자 태그에서 사용 가능한 속성들은 여러 가지들이 있지만 다룰 속성은 아래 세 가지이다.
+   - errorPage : 현재 페이지에 Exception이 발생하면 속성값에 설정한 jsp 경로로 exception을 던진다.
+   - isErrorPage : 현재 페이지가 Exception을 처리할 페이지인 경우 true로 지정한다. 기본값은 false이다.
+   - import : java.lang 패키지 이외의 클래스를 현 jsp 파일에서 사용할 때 import 속성으로 정의하면
+               java 파일의 import 선언부를 작성하는 것과 같다.
+
+예시 
+1. <%@ page contentType="text/html;charset=UTF-8" language="java" import="java.util.Date" errorPage="errorPage.jsp" %>
+2. <%@ page import="java.util.Date" %>
+    <%@ page import="java.text.SimpleDateFormat" %> 
+
+    지시자 태그는 page 지시자 태그, include 지시자 태그, taglib 지시자 태그가 있다.
+    - page 지시자 태그 : 현 jsp 페이지에 대한 설정을 하는 지시자 태그
+    - include 지시자 태그 : 다른 jsp 파일을 포함하기 위해 사용하는 지시자 태그
+                            file 속성에 jsp 경로를 지정하면, 해당 jsp에 작성한 내용을 그대로 포함시켜 현재 jsp 파일을 동작시킨다.
+                            따라서 동일한 변수 이름을 include 이후에 또 사용하면 한 페이지 내에 동일한 변수가 생성되는 것이므로
+                            컴파일 에러가 발생한다.
+    - taglib : xml 문법 기반의 라이브러리인 JSTL을 이용하기 위해 선언하는 지시자 태그
+
+
+   
