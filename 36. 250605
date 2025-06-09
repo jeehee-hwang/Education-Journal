@@ -1,2 +1,133 @@
-스프링 배움
+* Spring MVC 요청 처리과정
+Spring MVC 요청 처리 과정 (IoC 및 DB 연동 포함)
+Spring MVC는 클라이언트의 요청을 받아 처리하고 응답을 돌려주는 과정을 여러 컴포넌트들이 협력하여 수행하며, 
+이 모든 과정은 Spring의 IoC (Inversion of Control) 컨테이너의 관리 하에 이루어집니다. 
+DB 연동은 주로 Service 및 DAO 계층에서 처리됩니다.
+
+1. 클라이언트의 요청 전송 (HTTP Request)
+웹 브라우저(클라이언트)가 웹 애플리케이션으로 특정 URL에 대한 요청(예: GET /users)을 보냅니다.
+
+2. DispatcherServlet으로 요청 전달 (Front Controller)
+웹 서버(예: Tomcat)는 받은 요청을 모든 요청을 받는 Spring MVC의 핵심인 DispatcherServlet으로 전달합니다.
+DispatcherServlet은 Spring IoC 컨테이너에 의해 관리되는 빈(Bean)입니다.
+
+3. HandlerMapping 조회 (Controller 매핑)
+DispatcherServlet은 요청을 처리할 Handler(Controller)를 찾기 위해 HandlerMapping에게 요청을 위임합니다.
+HandlerMapping은 요청된 URL에 매핑되는 Controller 메소드 정보를 찾아 HandlerExecutionChain 형태로 DispatcherServlet에게 반환합니다. 이 HandlerMapping 또한 IoC 컨테이너에 의해 관리됩니다.
+
+4.HandlerAdapter 조회 및 Controller 실행 준비
+DispatcherServlet은 찾아낸 Controller를 실행할 수 있는 HandlerAdapter를 찾습니다.
+HandlerAdapter는 IoC 컨테이너에 의해 관리되며, 다양한 형태의 Controller 실행을 추상화합니다.
+
+5. Handler (Controller) 실행
+HandlerAdapter는 Controller의 적절한 메소드를 호출하여 요청을 처리합니다.
+- IoC 컨테이너의 역할: Controller 객체는 IoC 컨테이너로부터 의존성 주입(DI)을 통해 필요한 Service 객체 등을 제공받습니다. 
+예를 들어, @Autowired된 MemberService가 Controller에 주입됩니다.
+- 비즈니스 로직 위임: Controller는 직접 DB에 접근하는 대신, 비즈니스 로직을 수행할 Service 계층의 메소드를 호출하여 위임합니다.
+
+6. Service 계층의 비즈니스 로직 처리 및 DB 연동
+Service 계층의 메소드가 실행됩니다. Service 객체 또한 IoC 컨테이너에 의해 관리되며, 필요한 DAO 객체를 주입받습니다.
+- DB 연동: Service는 DAO (Data Access Object) 계층의 메소드를 호출하여 실제 데이터베이스와 상호작용합니다. 
+DAO는 JDBC, JPA, MyBatis 등과 같은 기술을 사용하여 DB로부터 데이터를 조회하거나, 데이터를 저장/수정/삭제합니다.
+처리된 결과(데이터)는 다시 Service를 거쳐 Controller로 반환됩니다.
+
+7.ModelAndView 반환 (또는 데이터 바로 응답)
+Controller는 처리 결과로 ModelAndView 객체(Model 데이터와 View 이름 포함), String(뷰 이름), 
+또는 @ResponseBody 어노테이션을 사용하여 JSON/XML 형태의 데이터를 반환합니다.
+
+8. ViewResolver 조회 (화면 찾기)
+ModelAndView가 반환된 경우, DispatcherServlet은 ViewResolver에게 View 이름에 해당하는 실제 View 객체를 찾도록 요청합니다. 
+ViewResolver 또한 IoC 컨테이너에 의해 관리됩니다.
+ViewResolver는 View 이름(예: "userList")을 기반으로 실제 View 파일의 경로(예: /WEB-INF/views/userList.jsp)를 해석하고 View 객체를 반환합니다.
+
+9. View 렌더링 (화면 생성)
+DispatcherServlet은 ViewResolver로부터 받은 View 객체에게 Model 데이터를 전달하여 렌더링을 요청합니다.
+View 객체(예: JSP 페이지)는 Model에 담긴 데이터를 사용하여 최종 HTML(또는 다른 형식의) 응답을 생성합니다.
+
+10. 클라이언트로 응답 전송 (HTTP Response)
+렌더링이 완료된 최종 응답(HTML, CSS, JavaScript 등)은 DispatcherServlet을 거쳐 웹 서버로 전달되고, 웹 서버는 이 응답을 클라이언트(웹 브라우저)에게 보냅니다.
+
+요약:
+IoC 컨테이너: Spring MVC의 모든 핵심 컴포넌트들(DispatcherServlet, Controller, Service, DAO, HandlerMapping, ViewResolver 등)은 IoC 컨테이너에 의해 빈(Bean)으로 생성되고 관리되며, 의존성 주입을 통해 서로 연결됩니다.
+DB 연동: DB 연동은 Controller가 직접 하는 것이 아니라, Controller -> Service -> DAO 계층으로 요청을 위임하여 처리됩니다. DAO 계층이 실제 DB와의 통신을 담당합니다.
+이로써 Spring MVC 요청 처리 과정은 단순한 요청-응답 흐름뿐만 아니라, Spring의 핵심 특징인 IoC와 엔터프라이즈 애플리케이션의 일반적인 계층 구조(Service, DAO)를 통한 DB 연동까지 포괄하는 개념임을 알 수 있습니다.
+
+## @Controller 어노테이션과 @Bean 어노테이션의 차이점
+@Controller 어노테이션
+목적: 주로 Spring MVC 애플리케이션에서 **웹 요청을 처리하는 컴포넌트(컨트롤러)**를 나타내는 데 사용됩니다.
+역할:
+Spring IoC 컨테이너에게 해당 클래스가 **웹 계층의 컴포넌트(Controller)**임을 알립니다.
+@RequestMapping, @GetMapping, @PostMapping 등과 같은 요청 매핑 어노테이션과 함께 사용하여 특정 URL 요청을 어떤 메소드가 처리할지 정의합니다.
+@Controller가 붙은 클래스는 기본적으로 싱글톤 스코프의 빈으로 IoC 컨테이너에 등록됩니다.
+뷰(View)를 반환하여 클라이언트에게 응답(예: JSP, Thymeleaf 등을 통한 HTML 페이지)을 제공하는 데 중점을 둡니다. (@ResponseBody와 함께 사용하면 데이터 응답도 가능)
+특징: @Component 어노테이션의 한 종류(Specialized @Component)입니다. 즉, @Controller가 붙은 클래스는 자동으로 컴포넌트 스캔 대상이 되어 Spring 컨테이너에 빈으로 등록됩니다.
+
+예시:
+
+package com.ohgiraffers.aop;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class MyWebController {
+
+    @GetMapping("/hello")
+    @ResponseBody // 이 어노테이션이 없으면 "hello"라는 뷰를 찾으려 함
+    public String sayHello() {
+        return "Hello from Spring MVC!";
+    }
+
+    @GetMapping("/members")
+    public String showMembers() {
+        // 이 경우 "members.jsp"와 같은 뷰를 찾게 됩니다.
+        return "members";
+    }
+}
+
+
+@Bean 어노테이션
+목적: 개발자가 메소드를 통해 Spring IoC 컨테이너에 의해 관리될 빈(객체)을 직접 정의하고 등록할 때 사용됩니다.
+역할:
+@Configuration 어노테이션이 붙은 클래스 내부의 메소드에 사용됩니다.
+메소드의 반환 타입이 빈의 타입이 되고, 메소드 이름이 빈의 이름(ID)이 됩니다.
+이 어노테이션이 붙은 메소드가 반환하는 객체를 Spring IoC 컨테이너에 빈으로 등록합니다.
+클래스 레벨의 어노테이션이 아닌 메소드 레벨의 어노테이션입니다.
+특징: 주로 개발자가 직접 객체를 생성하여 컨테이너에 주입해야 하는 경우 (예: 서드파티 라이브러리 객체, 복잡한 초기화 로직이 필요한 객체)에 사용됩니다.
+
+예시:
+
+package com.ohgiraffers.aop;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration // 이 클래스가 빈 정의를 포함함을 나타냄
+public class AppConfig {
+
+    @Bean // 이 메소드가 반환하는 MemberDAO 객체를 빈으로 등록
+    public MemberDAO memberDAO() {
+        return new MemberDAO(); // 개발자가 직접 객체를 생성하여 반환
+    }
+
+    @Bean // 이 메소드가 반환하는 MemberService 객체를 빈으로 등록
+    public MemberService memberService(MemberDAO memberDAO) { // MemberDAO 빈을 주입받아 사용
+        return new MemberService(memberDAO);
+    }
+}
+
+** @Controller vs @Bean 주요 차이점 요약
+특징 |	@Controller |	@Bean
+적용 대상 |	클래스에 적용	| @Configuration 클래스 내부의 메소드에 적용
+용도 |	웹 요청 처리 (@RequestMapping 등과 함께 사용)	 | 개발자가 직접 객체를 생성하여 빈으로 등록
+등록 방식 |	컴포넌트 스캔을 통해 자동 등록 |	메소드가 반환하는 객체를 수동으로 빈으로 등록
+관리 주체 |	Spring IoC 컨테이너가 직접 인스턴스화 및 관리 |	개발자가 메소드 내에서 객체를 생성하고, 컨테이너가 그 객체를 관리
+의미 |	"이 클래스는 웹 요청을 처리하는 컨트롤러다" |	"이 메소드가 반환하는 객체를 빈으로 등록해라"
+
+최종 요약 
+: @Controller는 특정 역할(웹 요청 처리)을 가진 컴포넌트를 지정하는 것
+  @Bean은 어떤 객체든 Spring 컨테이너가 관리하는 빈으로 등록하고 싶을 때 사용하는 더 일반적인 방법
+
+
 
