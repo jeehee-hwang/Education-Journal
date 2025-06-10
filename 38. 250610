@@ -1,0 +1,251 @@
+- interceptor, FileUpload, thymeleaf
+
+** interceptor
+      Spring Interceptor는 스프링 프레임워크에서 제공하는 기능 중 하나로, 클라이언트의 요청을 가로채서 처리하는 역할을 한다.
+      이를 통해 공통적인 로직(로깅, 성능 측정, 캐싱)을 처리하거나, 보안(인증, 권한) 등의 목적으로 특정 조건을 검사하고
+      해당 요청을 처리하거나, 무시할 수 있다.
+      Interceptor 는 특정 요청 URL에만 적용되도록 매핑할 수 있다는 점이 필터와 유사하다.
+      하지만 필터와 달리 Interceptor 는 스프링 웹 어플리케이션 컨텍스트에 구성하기 때문에
+      컨테이너의 기능을 자유롭게 활용할 수 있으며, 그 내부에 선언된 모든 빈을 참조할 수 있다.
+   
+preHandle - /* 핸들러 메소드를 호출하기 이전에 동작하는 메소드 */
+postHandle -  /* 핸들러 메소드 동작 이후에 수행되는 메소드 */
+afterCompletion -  /* 요청을 했을 때 성공 실패 관계없이 무조건 동작하는 메소드 */
+
+이 3가지 메소드는  @Override 받아서 사용한다. 
+
+
+** FileUpload
+- file 업로드 하기
+      get방식으로 전송 불가 
+      왜냐? 1. 용량이 크다.
+            2. 파일데이터를 인코딩해서 전달해야 깨지지 않게 서버에서 해석을 하는데, url에 인코딩하는 방식으로는 파일을 인코딩 할 수 없다.
+
+  - enctype 지정, 다양한 파일을 업로드 하고 싶으면 multiple을 넣어야 한다. 
+  
+  <form action="single-file" method="post" enctype="multipart/form-data">
+      파일 : <input type="file" name="singleFile"><
+      파일 설명 : <input type="text" name="singleFileDescription"><br>
+    <input type="submit">
+  </form>
+
+  <h3>multi file 업로드 하기</h3>
+  <form action="multi-file" method="post" enctype="multipart/form-data">
+      파일 : <input type="file" name="multiFile" multiple><br>
+      파일 설명 : <input type="text" name="multiFileDescription"><br>
+      <input type="submit">
+  </form>
+
+@Controller
+public class FileUploadController {
+
+    @PostMapping("/single-file")
+    public String singleFileUpload(@RequestParam String singleFileDescription,
+                                   @RequestParam MultipartFile singleFile,
+                                   Model model) {
+
+
+        /* 서버로 전달 된 File을 서버에서 설정하는 경로에 저장한다. */
+        String root = "src/main/resources/static";
+        String filePath = root + "/uploadFiles";
+        File dir = new File(filePath);
+        System.out.println(dir.getAbsolutePath());
+
+        if(!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        /* 파일명 변경 처리 */
+        String originFileName = singleFile.getOriginalFilename();
+
+        String ext = originFileName.substring(originFileName.lastIndexOf("."));
+        System.out.println("ext = " + ext);
+
+        String savedName = UUID.randomUUID() + ext;
+        System.out.println("savedName = " + savedName);
+
+        /* 파일 저장 */ - transferTo 예외 처리 
+        try {
+            singleFile.transferTo(new File(filePath + "/" + savedName));
+            model.addAttribute("message", "파일 업로드 완료!");
+        } catch (IOException e) {
+            model.addAttribute("message", "파일 업로드 실패!");
+        }
+
+        return "result";
+    }
+
+    @PostMapping("/multi-file")
+    public String multiFileUpload(@RequestParam String multiFileDescription,
+                                  @RequestParam List<MultipartFile> multiFile,
+                                  Model model) {
+
+        System.out.println("multiFileDescription = " + multiFileDescription);
+        System.out.println("multiFile = " + multiFile);
+
+        String root = "src/main/resources/static";
+        String filePath = root + "/uploadFiles";
+        File dir = new File(filePath);
+
+        if(!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        List<FileDTO> files = new ArrayList<>();
+
+        /* 파일명 변경 처리 후 저장 : 다중 파일 반복문 처리 */
+        try {
+
+            for(MultipartFile file : multiFile) {
+
+                String originFileName = file.getOriginalFilename();
+                System.out.println("originFileName = " + originFileName);
+
+                String ext = originFileName.substring(originFileName.lastIndexOf("."));
+
+                String savedName = UUID.randomUUID() + ext;
+
+                /* 파일에 관한 정보 추출 후 보관 */
+                files.add(new FileDTO(originFileName, savedName, filePath, multiFileDescription));
+
+                /* 파일 저장 */
+                file.transferTo(new File(filePath + "/" + savedName));
+            }
+
+            model.addAttribute("message", "파일 업로드 완료!");
+
+        } catch (IOException e) {
+
+            /* 파일 저장 중간에 실패 시 이전에 저장 된 파일 삭제 */
+            for(FileDTO file : files) {
+                new File(filePath + "/" + file.getSavedName()).delete();
+            }
+
+            model.addAttribute("message", "파일 업로드 실패");
+        }
+
+        return "result";
+    }
+}
+
+** thymeleaf
+
+1. 표현식
+    1. 주석
+        1. parser-level 주석
+            : parser-level 주석은 정적인 페이지에서는 주석으로 있다가 thymeleaf가 처리될 때 제거되어 클라이언트에게 노출되지 않는다는 장점이 있다.
+        2. prototype-level 주석
+            : prototype-level 주석은 정적인 페이지에서 주석으로 있다가 thymeleaf 처리 후에는 화면에 보여지게 되는 주석
+        
+    2. 변수 표현식 ${...}
+       <p th:text="${ param.title }"></p>
+        <p th:text="${ param.no[0] }"></p>
+        <p th:text="${ param.no[1] }"></p>
+    
+    3. 메시지 표현식 #{...}
+        <p th:text="#{ message.value }"></p>
+    
+    4. 링크 표현식 @{...}</h2>
+        <a th:href="@{/}">메인으로</a>
+    
+    5. 선택 변수 표현식 *{...}
+        <p th:text="${ member.name }"></p>
+        <div th:object="${ member }">
+            <p th:text="*{ age }"></p>
+            <p th:text="*{ gender }"></p>
+            <p th:text="*{ address }"></p>
+        </div>
+    
+    6. HTML 출력 th:text, th:utext, th:value</h2>
+        <ul>
+            <li th:text="${ hello }"></li> 
+            <li th:utext="${ hello }"></li>
+            <li><input type="text" th:value="타임리프"></li>
+        </ul>
+    
+    7.리터럴 치환 || ** "| 띄어쓰기하면 인식 못함
+        '+'를 쓰지 않고 문자열 합치기 
+        <p th:object="${ member }" th:text="|name = '*{ name }'|"></p>
+        <p th:object="${ member }" th:text="|age = '*{ age }'|"></p>
+        <p th:object="${ member }" th:text="|gender = '*{ gender }'|"></p>
+        <p th:object="${ member }" th:text="|address = '*{ address }'|"></p>
+    
+    8. th:block
+           범위를 지정하고 싶을 때 사용한다. 불필요한 div 태그를 사용하지 않아도 된다.
+            th:block을 통해 해당 범위에 변수나 객체를 적용하거나
+            조건에 해당되는지에 따라 해당 범위를 보여주거나 보여주지 않을 때 사용할 수 있다.
+        <th:block th:object="${ member }">
+            <p th:text="*{ age }"></p>
+        </th:block>
+
+2. 제어문
+
+  1. th:if, th:unless
+  
+    <p th:if="${ num > 0 }">넘어온 값은 0보다 크다.</p>
+    <p th:unless="${ num < 0 }">넘어온 값은 0보다 크다.</p>
+
+    <th:block th:if="${ str == '사과'}">
+        <p>사과입니다!</p>
+    </th:block>
+    <th:block th:if="${ str == '바나나'}">
+        <p>바나나입니다!</p>
+    </th:block>
+
+    and나 or를 사용해서 다중 조건 처리도 가능하다. 
+    <p th:if="${ num > 0 or num <= 10}">1부터 10까지의 양수</p>
+    <p th:if="${ str != null and str == '바나나'}">바나나입니다~</p>
+    
+    #strings라는 타임리프에서 제공하는 Utility Objects에서 제공하는 메소드를 통해서 null 처리 
+    <p th:if="${ !#strings.isEmpty(str) and str == '바나나'}">진짜 바나나입니다</p>
+
+         타임리프에서는 기본적으로 제공되는 Utility Objects의 기능들을 통해 값을 손쉽게 원하는 값으로 처리할 수 있다.
+        - Strings : 문자 관련 편의 기능 제공
+        - Numbers : 숫자 서식 기능 제공
+        - Objects : 객체 관련 기능 제공
+        - Arrays : 배열 관련 기능 제공
+        - Lists
+        - Maps
+        - Messages
+        - Dates
+        - Calendars
+
+    2. th:switch, th:case
+     th:switch와 th:case를 통해 해당 조건의 값이 어떤 case에 해당되는지에 따라 태그를 선택할 수 있다.
+    <th:block th:switch="${ str }">
+        <span th:case="사과">사과가 선택되었습니다.</span>
+        <span th:case="바나나">바나나가 선택되었습니다.</span>
+    </th:block>
+
+    3. th:each(반복문)를 통해 태그들을 반복할 수 있다.
+    <table border="1">
+        <tr>
+            <th>이름</th>
+            <th>나이</th>
+            <th>성별</th>
+            <th>주소</th>
+        </tr>
+        <tr th:each="member : ${ memberList }">
+            <td th:text="${ member.name }"></td>
+            <td th:text="${ member.age }"></td>
+            <td th:text="${ member.gender }"></td>
+            <td th:text="${ member.address }"></td>
+        </tr>
+    </table>
+
+      - #numbers Utility Object를 이용하여 반복문 작성하기 (문법임) 
+      <th:block th:each="num : ${#numbers.sequence(5, 10)}">
+          <a th:href="@{|/numbering/${ numStat.count }|}" th:text="번호 + ${ num }"></a>
+      </th:block>
+
+3. 기타
+  1. th:with : 지역 변수를 지정해서 쓸 수 있다.
+    <th:block th:with="start = ${ selectCriteria.startPage }, last = ${ selectCriteria.endPage }">
+        <th:block th:each="p : ${ #numbers.sequence(start, last)}">
+            <th:block th:if="${ selectCriteria.pageNo eq p }">
+                <button th:text="${ p }" disabled></button>
+            </th:block>
+
+            <th:block th:if="${ selectCriteria.pageNo ne p }">
+                <button th:text="${ p }"></button>
+            </th:block>
