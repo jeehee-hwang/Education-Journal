@@ -1,0 +1,84 @@
+JPA - Association Mapping - BiDirection / JPQL - 1.4 paging 까지 
+
+
+- 어노테이션
+(1) @Repository
+뜻 : 이 클래스가 저장소 역할(데이터 접근) 을 한다고 스프링에게 알려줌.
+왜? : 스프링이 이 클래스를 자동으로 Bean으로 등록하고
+예외 발생 시 Spring의 데이터 접근 예외 변환기능(PersistenceExceptionTranslation)을 적용해줌.
+즉, DB 관련 예외를 스프링 전용 예외로 바꿔서 다루기 쉽게 만들어줌.
+
+(2) @PersistenceContext
+뜻 : 스프링이 알아서 EntityManager 객체를 만들어서 여기에 주입(Inject)해 줌.
+왜? : EntityManager는 JPA에서 가장 핵심 객체로서 DB 작업 (쿼리 실행, 트랜잭션 관리 등)을 담당함.
+직접 new 해서 만들 필요 없이, 스프링이 알아서 만들어준 걸 사용하면 됨.
+
+- 변수와 객체는 무엇인지
+개념 | 설명 |	예시 (코드 기준)
+변수 | 데이터를 저장하는 공간 (값을 담는 상자) | String jpql = "SELECT m.menuName FROM ..."; → 문자열을 담는 변수
+객체 | 클래스(설계도)를 바탕으로 실제로 생성된 실체 | TypedQuery<String> query = entityManager.createQuery(jpql, String.class); → TypedQuery라는 클래스의 객체
+쉽게 말해 변수는 데이터 저장, 객체는 기능+데이터를 가지는 실체입니다.
+
+- 구문을 풀어서 설명 (전체 흐름)
+1. 클래스 선언
+@Repository
+public class SimpleJPQLRepository {
+SimpleJPQLRepository 라는 이름의 클래스 (저장소 역할 클래스) 정의
+@Repository를 붙여 스프링이 이걸 **DAO(데이터 접근 클래스)**로 인식하도록 함
+
+2.  변수 선언 - EntityManager
+@PersistenceContext
+private EntityManager entityManager;
+EntityManager라는 타입의 변수 entityManager를 선언
+스프링이 자동으로 entityManager라는 객체를 이 변수에 넣어줌 (DB 연결, 쿼리 실행 등 담당)
+
+구분 | 설명 |	이 코드에서
+변수 (Variable) | 데이터를 저장할 공간, 이름이 필요함 | entityManager (변수 이름)
+객체 (Object) | 클래스 설계도로 만들어진 실체 | EntityManager 객체 (스프링이 만들어서 이 변수에 넣어줌)
+
+
+3. 메서드 1 : selectSingleMenuByTypedQuery
+public String selectSingleMenuByTypedQuery() {
+    String jpql = "SELECT m.menuName FROM Section01Menu as m WHERE m.menuCode = 8";
+    TypedQuery<String> query = entityManager.createQuery(jpql, String.class);
+    String resultMenuName = query.getSingleResult();
+    return resultMenuName;
+}
+
+  JPQL 작성
+String jpql = "SELECT m.menuName FROM Section01Menu as m WHERE m.menuCode = 8";
+  변수 jpql에 쿼리문 저장
+  Section01Menu 엔티티에서 menuCode가 8인 메뉴의 이름을 가져오는 쿼리
+
+ TypedQuery 생성 (쿼리 실행 준비)
+TypedQuery<String> query = entityManager.createQuery(jpql, String.class);
+ entityManager가 JPQL을 분석해서 실행 준비 → TypedQuery 객체 생성
+ 이 쿼리의 결과가 String 타입이라는 것을 명시
+ 
+  결과 가져오기
+String resultMenuName = query.getSingleResult();
+  query.getSingleResult() 실행 → 쿼리 결과 중 유일한 한 건의 결과를 가져옴
+  결과는 resultMenuName 변수에 담김
+
+  리턴
+ return resultMenuName;
+  최종 결과 반환
+
+4. 메서드 2 : selectMultiRowByTypedQuery
+public List<Menu> selectMultiRowByTypedQuery() {
+    String jpql = "SELECT m FROM Section01Menu as m";
+    TypedQuery<Menu> query = entityManager.createQuery(jpql, Menu.class);
+    List<Menu> resultMenuList = query.getResultList();
+    return resultMenuList;
+}
+위 메서드와 비슷하지만, 이번엔 Section01Menu 전체 객체(Menu 엔티티)를 리스트로 반환
+getResultList() : 여러 건의 결과를 리스트로 받음
+
+5.  나머지 메서드도 모두 비슷한 구조
+selectUsingDistinct() → DISTINCT 사용해서 중복 제거
+selectUsingIn() → IN 조건으로 11, 12번 카테고리만 조회
+selectUsingLike() → LIKE 사용해서 menuName에 '마늘'이 포함된 것 조회
+
+* 전체 요약 흐름
+스프링이 Repository 클래스 자동 관리 → EntityManager 자동 주입 → JPQL 작성 → TypedQuery 생성 → 쿼리 실행 → 결과 반환
+
