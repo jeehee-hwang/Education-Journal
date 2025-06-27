@@ -1,0 +1,221 @@
+react ToDoList 만들기 
+- 내가 한 부분, 오류가 난 부분 
+** 강사님의 코드 보고 분석해 볼 것 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <h1>오늘의 할일! </h1>  
+
+    <script type="text/babel">
+
+        
+        const { useState } = React; 
+
+        function ToDoList() {
+            const [inputValue, setInputValue] = useState('');
+            const [lists, setLists] = useState([{id:1, text: '할 일 목록'}]); 
+            const [nextList, setNextList] = useState(2)
+
+
+        const handleChange = (e) => setInputValue(e.target.value)
+
+        const handleAdd = () => {
+            console.log('입력값:', inputValue);
+            if (inputValue.trim() === '') return;
+
+            const newList = {id: nextList, text: inputValue}
+                setLists([...lists, newList]);
+                setNextList(nextList +1);
+                inputValue(''); 
+
+        }
+
+        const handleRemove = (id) => {
+            const updated = lists.filter(list => list.id !== id);
+            setLists(updated);
+
+        }
+
+   return (
+            <>
+                <ul>
+                    {lists.map(item => (
+                        <li key={item.id} onDoubleClick={() => handleRemove(item.id)}>
+                            {item.text}
+                            <button onClick={() => handleRemove(item.id)}>삭제</button>
+                        </li>
+                    ))}
+                </ul>
+
+                <input type="text" value={inputValue} onChange={handleChange} onKeyDown={ (e) => {if(e.key === 'Enter') handleAdd();}}  placeholder="할 일을 입력하세요" />
+                <button onClick={handleAdd}>추가하기</button>
+
+
+            </>
+        );
+
+    }
+        
+    ReactDOM.createRoot(document.getElementById('root')).render( <ToDoList/>);
+
+    </script>
+
+</body>
+</html>
+
+1차 오류류
+1. `setInpoutValue` 오타**
+**오류**: `setInpoutValue` → `setInputValue` 로 선언했어야 함
+- 이로 인해 `setInputValue(...)`를 어디서도 사용할 수 없음
+
+2. `ToDoList` 함수 안에 리턴(return)이 없음**
+**오류**: `return (...)` 이 함수 밖에 있어 실행되지 않음
+- 컴포넌트 본문인 `return (...)` JSX는 함수 안에 있어야 함
+
+3. `inputValue.trim` 은 함수가 아님**
+**오류**: `trim`은 메서드이므로 `trim()`으로 호출해야 함
+**수정**: `inputValue.trim() === ''`
+
+4. `newList`가 정의되기 전에 `newList.id`를 사용**
+**오류**: `newList`를 정의하면서 동시에 자기 자신을 참조하고 있음
+**수정**: `id: nextList`로 해야 함
+
+5. `setNames`가 어디에도 선언되지 않음**
+setNames([...lists, newList]);
+- **오류**: `lists`를 업데이트하려면 `setLists`를 사용해야 함
+- **수정**: `setLists([...lists, newList])`
+
+6. `inputValue(' ')` 는 잘못된 함수 호출**
+inputValue(' ');
+**오류**: `inputValue`는 state 변수이므로 함수가 아님
+**수정**: `setInputValue('')` 또는 `' '` 등으로 초기화
+
+7. 변수 이름 불일치 (`names` vs `lists`)**
+const updated = names.filter(list => list.todo !== todo);
+**오류**: `names`는 선언되지 않음. 위에서 `lists`라는 state를 선언했음
+**수정**: `lists.filter(...)` / `setLists(updated)`
+
+2차 오류 
+1. 함수 안의 코드가 함수 외부에 위치함*
+
+function ToDoList() {
+    const [inputValue, setInputValue] = useState(' ');
+    const [lists, setLists] = useState([{id:1, text: '할 일 목록'}]);
+    const [nextList, setNextList] = useState(2)
+}
+
+// ↓ 이 부분들은 함수 밖에 위치함 (문법 오류 발생)
+const handleChange = ...
+const handleAdd = ...
+
+### 해결:
+아래 코드를 **모두 `ToDoList` 함수 안으로 넣어야 합니다.**
+
+function ToDoList() {
+    const [inputValue, setInputValue] = useState(' ');
+    const [lists, setLists] = useState([{id:1, text: '할 일 목록'}]);
+    const [nextList, setNextList] = useState(2);
+
+    const handleChange = (e) => setInputValue(e.target.value);
+
+    const handleAdd = () => {
+        if (inputValue.trim() === '') return;
+
+        const newList = { id: nextList, text: inputValue };
+        setLists([...lists, newList]);
+        setNextList(nextList + 1);
+        setInputValue('');
+    };
+
+    const handleRemove = (id) => {
+        const updated = lists.filter(list => list.id !== id);
+        setLists(updated);
+    };
+
+    return (
+        <><input type="text" value={inputValue} onChange={handleChange} placeholder="할 일을 입력하세요" />
+            <button onClick={handleAdd}>추가</button>
+            <ul>
+                {lists.map(item => (
+                    <li key={item.id}>
+                        {item.text}
+                        <button onClick={() => handleRemove(item.id)}>삭제</button>
+                    </li>
+                ))}
+            </ul>
+        </>
+    );
+}
+
+2. 변수 이름 오류**
+const newList = {id: newList, text: inputValue}
+- 여기서 `id: newList`는 **자기 자신을 참조해서 오류** 발생
+### 해결:
+const newList = { id: nextList, text: inputValue };
+
+3. `setNames`, `setNextId`, `inputValue(' ')` 등 오타**
+### 문제점:
+- `setNames` → `setLists`
+- `setNextId` → `setNextList`
+- `inputValue(' ')` → `setInputValue('')`
+
+3차 오류 - 할 일을 추가하는 기능"이 작동하지 않는 이유
+1. `handleAdd`가 호출되었는지 확인
+- 버튼은 `<button onClick={handleAdd}>추가</button>`으로 연결돼 있어 잘 되어 있습니다.
+- 👉 **버튼 클릭 시 `handleAdd()`는 제대로 실행됩니다.**
+
+2. `inputValue` 상태에 값이 들어갔는가?
+**문제 가능성 1: `useState(' ')` 공백 한 칸**
+const [inputValue, setInputValue] = useState(' ');
+- 공백 한 칸으로 초기화하면, `trim()`으로 검사할 때 항상 공백이라 추가가 **무시됨**.
+- 그리고 사용자 입력 후에도 앞뒤에 공백이 붙어버릴 수 있음.
+
+**수정**
+const [inputValue, setInputValue] = useState('');
+
+3. `inputValue.trim() === ''` 검사 통과 여부
+if (inputValue.trim() === '') return;
+- 사용자가 아무 것도 입력하지 않으면, 이 조건에 걸려서 **추가되지 않음**.
+- 콘솔 로그로 확인해 보면 좋습니다.
+
+✅ 테스트 코드 예시:
+const handleAdd = () => {
+    console.log('입력값:', inputValue); // 확인용
+    if (inputValue.trim() === '') return;
+
+    const newList = { id: nextList, text: inputValue };
+    setLists([...lists, newList]);
+    setNextList(nextList + 1);
+    setInputValue('');
+};
+
+4. `newList` 객체에서 `id: newList` ← **자기 자신 참조 오류**
+const newList = {id: newList, text: inputValue}
+- 오류: `newList`가 선언되기 전인데 또 `newList`를 참조하고 있어 **에러 발생**
+**수정**
+const newList = { id: nextList, text: inputValue };
+
+5. `setNames`, `setNextId`, `inputValue(' ')` ← **없는 함수/변수 사용**
+setNames([...lists, newList]);     // ❌ → setLists
+setNextId(nextList + 1);          // ❌ → setNextList
+inputValue(' ');                  // ❌ → setInputValue('')
+
+6. `onKeyDown={ (e) => { if(e.key === 'Enter') handleChange } }`
+- `handleChange`를 **호출하지 않고 참조만** 함 (즉, 아무 일도 안 일어남)
+- 그리고 할 일을 **추가**해야 하므로 `handleAdd()`를 불러야 함
+**수정**
+onKeyDown={(e) => {if (e.key === 'Enter') handleAdd();}}
+
+-
