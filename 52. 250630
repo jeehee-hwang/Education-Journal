@@ -1,0 +1,140 @@
+- 깃허브 이모지 API를 사용해 img를 보여주는 프로그램 작성 
+* useState, props, event, 비동기 통신을 이용해서 입력 된 값과 일지하는 이모지를 img에 보여주는 프로그램 작성, 일치하는 값이 없을 경우 이미지를 랜더링 하지 않음
+
+내가 작성한 코드 
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        /*  https://api.github.com/emojis */ 
+
+        const {useState, useEffect } = React; 
+
+        function SearchBox ({ inputValue, onInputChange }) {
+            return(
+                <>
+                    <label >이모지 이름 입력:</label>
+                    <input 
+                        id="emoji-search"
+                        type="text" 
+                        value={inputValue}
+                        onChange={onInputChange}
+                    />
+                </>
+            )
+        }
+        
+       function ImageBox ({ emojis, searchName }) {
+            return(
+                <>
+                  <input 
+                        id="emoji-search"
+                        type="text" 
+                        value={emojis}
+                        onChange={ searchName }
+                  />
+                </>
+            )
+
+        }
+
+        function App() {
+
+            useEffect = fetch('hhttps://api.github.com/emojis')
+            .then(response => {
+                console.log('fetch response : ' , response)
+                return response.json()
+            })
+            .then(date => console.log('fetch data : ', date));
+
+            return(
+                <>
+                    <SearchBox/>
+                    <br/>
+                    <ImageBox/>
+                </>
+            )    
+
+        }
+        
+        ReactDOM.createRoot(document.getElementById('root')).render( <App/>);
+
+    </script>
+</body>
+
+** 제미나이가 작성해준 코드 
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 입력창 컴포넌트
+        function Search({ inputValue, onInputChange }) {
+            return (
+                <div>
+                <label htmlFor="emoji-search" style={{ marginRight: '10px', fontSize: '18px' }}>
+                    이모지 이름 입력:
+                </label>
+                <input
+                    id="emoji-search"
+                    type="text"
+                    value={inputValue}
+                    onChange={onInputChange} // onChange 이벤트 발생 시 부모의 함수 호출
+                    placeholder="예: ghost, smile, cat"
+                    style={{ padding: '8px', fontSize: '16px' }}
+                />
+                </div>
+            );
+        }
+
+        // 이모지 표시 컴포넌트
+        function Display({ emojis, searchName }) {
+            // 검색어(searchName)가 이모지 목록(emojis)에 키로 존재하는지 확인
+            const imageUrl = emojis && emojis[searchName];
+
+            // imageUrl이 존재할 경우에만 img 태그를 렌더링, 없으면 null 반환
+            return imageUrl ? (
+                <div style={{ marginTop: '20px' }}>
+                <img src={imageUrl} alt={searchName} style={{ width: '100px', height: '100px' }} />
+                </div>
+            ) : null;
+        }
+
+        // 메인 앱 컴포넌트
+        function App() {
+            // State: 전체 이모지 목록과 사용자 입력값을 관리
+            const [emojis, setEmojis] = useState(null);
+            const [inputValue, setInputValue] = useState('');
+
+            // 비동기 통신: 컴포넌트가 처음 렌더링될 때 API 호출
+            useEffect(() => {
+                fetch('https://api.github.com/emojis')
+                .then(response => response.json())
+                .then(data => {
+                    setEmojis(data); // 가져온 데이터를 state에 저장
+                })
+                .catch(error => console.error('Error fetching emojis:', error));
+            }, []); // 빈 배열을 전달하여 최초 1회만 실행
+
+            // Event Handler: input 값이 변경될 때마다 state 업데이트
+            const handleInputChange = (e) => {
+                setInputValue(e.target.value);
+            };
+
+            return (
+                <div style={{ padding: '30px', fontFamily: 'sans-serif' }}>
+                <h1>이모지 검색기 🔍</h1>
+                {/* Props: 자식 컴포넌트에 상태와 이벤트 핸들러 전달 */}
+                <Search inputValue={inputValue} onInputChange={handleInputChange} />
+                <Display emojis={emojis} searchName={inputValue} />
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+    </script>
+   
+</body>
