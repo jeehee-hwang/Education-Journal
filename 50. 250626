@@ -1,1 +1,127 @@
 - React
+
+React 기초 요약 노트
+
+📌 1. React란?
+  React는 사용자 인터페이스(UI)를 만들기 위한 JavaScript 라이브러리입니다.
+  컴포넌트 기반으로 화면을 구성하고, 상태(state)를 관리하면서 동적인 웹을 쉽게 만들 수 있어요.
+
+📦 2. JSX (JavaScript + XML)
+✅ 개념
+  JavaScript 안에서 HTML처럼 코드를 작성할 수 있는 문법
+
+✅ 예시
+  const element = <h1>Hello, React!</h1>;
+✅ 주의할 점
+  태그는 꼭 닫아야 함: <br />, <img />
+  class → className
+  for → htmlFor
+
+🧩 3. 컴포넌트 (Component)
+✅ 개념
+  React에서 UI를 구성하는 재사용 가능한 블록
+
+✅ 함수형 컴포넌트
+  function Greeting() {
+    return <h1>Hello!</h1>;
+  }
+
+⚙️ 4. Props (속성)
+✅ 개념
+  부모 → 자식 컴포넌트로 값 전달할 때 사용
+
+✅ 예시
+  function Welcome(props) {
+    return <h1>Hello, {props.name}</h1>;
+  }
+  
+  <Welcome name="Alice" />
+
+🔁 5. State (상태 관리) - useState
+✅ 개념
+  컴포넌트 안에서 변하는 값을 저장하고 추적할 수 있게 함
+
+✅ 사용법
+  import { useState } from 'react';
+
+  function Counter() {
+    const [count, setCount] = useState(0);
+    
+    return (
+      <button onClick={() => setCount(count + 1)}>
+        클릭 수: {count}
+      </button>
+    );
+  }
+
+⏱️ 6. useEffect (사이드 이펙트 처리)
+✅ 개념
+  컴포넌트가 렌더링될 때 실행되는 코드 (예: fetch, 타이머)
+
+✅ 사용법
+  useEffect(() => {
+    console.log("처음 한 번 실행");
+  }, []);
+
+  useEffect(() => {
+    console.log("특정 값이 바뀔 때 실행");
+  }, [someValue]);
+
+🔄 7. 반복 렌더링 - .map()
+✅ 예시
+  const fruits = ['사과', '바나나', '포도'];
+
+  return (
+    <ul>
+      {fruits.map(fruit => (
+        <li key={fruit}>{fruit}</li>
+      ))}
+    </ul>
+  );
+
+🔘 8. 조건부 렌더링
+  {isLoading && <p>로딩 중...</p>}
+  {user ? <p>환영합니다!</p> : <p>로그인해주세요.</p>}
+
+🧱 9. Fragment - 여러 요소를 감쌀 때
+  return (
+    <>
+      <h1>제목</h1>
+      <p>내용</p>
+    </>
+  );
+🧨 10. ReactDOM으로 렌더링
+  import React from 'react';
+  import ReactDOM from 'react-dom/client';
+  
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+
+🛠️ 11. Fetch API 사용하기
+  useEffect(() => {
+    fetch('https://pokeapi.co/api/v2/pokemon')
+      .then(res => res.json())
+      .then(data => setData(data.results));
+  }, []);
+
+📚 React 기초 프로젝트 구조 예시
+cpp
+복사
+편집
+src/
+├── App.js          // 메인 컴포넌트
+├── components/
+│   └── Card.js     // 재사용 가능한 컴포넌트
+└── index.js        // 렌더링 시작점
+
+✅ 기억해야 할 핵심 요약
+개념 | 키워드
+화면 조각	| 컴포넌트 (Component)
+부모 → 자식 전달 |	props
+동적 데이터	| useState
+생명주기 / 사이드이펙트	| useEffect
+조건에 따라 보여주기 |	조건부 렌더링
+배열 순회	| .map()
+여러 요소 묶기 |	<></> Fragment
+렌더링 시작점 | ReactDOM.createRoot(...).render()
+
