@@ -1,0 +1,437 @@
+- 포켓몬 api를 활용해 도감 만들기 
+
+내가 한 부분 
+- 리액트 전반적인 복습이 필요 할듯 
+
+1. 시작 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .card {
+            border: 1px solid black;
+            width: 300px;
+            margin: 10px;
+            padding: 20px;
+            display: inline-block;
+        }
+        .card>* {
+            display: inline-block;
+        }
+        .card>img {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        const { useEffect, useState } = React; 
+
+        function Title() {
+            return (
+                <h1>포켓몬 목록</h1>
+            )  
+        }
+
+            /* 전체  포켓몬 목록에 대한 api 요청 
+            * https://pokeapi.co/api/v2/pokemon
+            * 비동기 요청*/
+        function PokemonList() {
+
+            const [pokemonList, setPokemonList] = useState([]);
+
+            useEffect(() => {
+                fetch("https://pokeapi.co/api/v2/pokemon")
+                    .then(response => response.json())
+                    .then(data => setPokemonList(data.results))
+            }, [] 
+            ); 
+
+            console.log(pokemonList); 
+
+            return (
+                <div>
+                </div>
+            );
+        }   
+            
+
+        /*한 포켓몬의 이미지 주소 요청 (이전 api 요청 경과의 url 속성으로 존재함)
+         * ex) https://pokeapi.co/api/v2/pokemon/1
+         *  sprites.front_default 속성 이미지 사용 
+         * 비동기 요청  */
+        function Card( ) {
+          
+            useEffect (() => {})
+
+            <div className="card">
+                <img />
+                <div className="info">
+                    <h2>No. </h2>
+                    <h3>name : </h3>
+                </div>
+            </div>
+        }
+
+        function App() {
+            return(
+                <>
+                    <Title/>
+                    <PokemonList/>
+                </>
+            )
+        }
+        
+        ReactDOM.createRoot(document.getElementById('root')).render( <App/>);
+
+    </script>
+   
+</body>
+</html>
+
+
+=======================================================================
+
+ 2. 제미나이의 도움을 받아 완성한 코드 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .card {
+            border: 1px solid black;
+            width: 300px;
+            margin: 10px;
+            padding: 20px;
+            display: inline-block;
+        }
+        .card>* {
+            display: inline-block;
+        }
+        .card>img {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        const { useEffect, useState } = React; 
+
+        function Title() {
+            return (
+                <h1>포켓몬 목록</h1>
+            )  
+        }
+
+            /* 전체  포켓몬 목록에 대한 api 요청 
+            * https://pokeapi.co/api/v2/pokemon
+            * 비동기 요청*/
+        function PokemonList() {
+
+            const [pokemonList, setPokemonList] = useState([]);
+
+            useEffect(() => {
+                fetch("https://pokeapi.co/api/v2/pokemon")
+                    .then(response => response.json())
+                    .then(data => setPokemonList(data.results))
+            }, [] 
+            ); 
+
+            console.log(pokemonList); 
+
+            return (
+                <div className="pokemon-list">
+                    {pokemonList.map(pokemon => (
+                        <Card key={pokemon.name} pokemon={pokemon} />
+                    ))}
+                </div>
+            );
+        }   
+            
+
+        /*한 포켓몬의 이미지 주소 요청 (이전 api 요청 경과의 url 속성으로 존재함)
+         * ex) https://pokeapi.co/api/v2/pokemon/1
+         *  sprites.front_default 속성 이미지 사용 
+         * 비동기 요청  */
+        function Card({pokemon}) {
+
+            const [pokemonDetails, setPokemonDetails] = useState( );
+            
+            useEffect (() => {
+                fetch(pokemon.url)
+                    .then(response => response.json())
+                    .then(data => setPokemonDetails(data))
+            }, [pokemon.url] 
+            ); 
+
+
+            return (
+                pokemonDetails && (
+                    <div className="card">
+                        <img src={pokemonDetails.sprites.front_default} alt={pokemon.name} />
+                        <div className="info">
+                             <h2>No. {pokemonDetails.id}</h2>
+                             <h3>name: {pokemonDetails.name}</h3>
+                        </div>         
+                    </div>
+                )
+            );
+        }
+
+        function App() {
+            return(
+                <>
+                    <Title/>
+                    <PokemonList/>
+                </>
+            )
+        }
+        
+        ReactDOM.createRoot(document.getElementById('root')).render( <App/>);
+
+    </script>
+   
+</body>
+</html>
+
+=======================================================================
+
+3. 제미나이가 한 부분 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .card {
+            border: 1px solid black;
+            width: 300px;
+            margin: 10px;
+            padding: 20px;
+            display: inline-block;
+        }
+        .card>* {
+            display: inline-block;
+        }
+        .card>img {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        const { useEffect, useState } = React;
+
+        // 1. Card 컴포넌트: props를 받아 데이터를 표시하고, return 구문을 추가했습니다.
+        function Card({ pokemon }) {
+            const [pokemonDetails, setPokemonDetails] = useState(null);
+
+            useEffect(() => {
+                // 각 포켓몬의 상세 정보(이미지 URL 등)를 가져옵니다.
+                fetch(pokemon.url)
+                    .then(response => response.json())
+                    .then(data => {
+                        setPokemonDetails(data);
+                    });
+            }, [pokemon.url]); // pokemon.url이 바뀔 때만 재실행합니다.
+
+            // 데이터 로딩 중에는 간단한 메시지를 표시합니다.
+            if (!pokemonDetails) {
+                return <div>Loading...</div>;
+            }
+
+            return (
+                <div className="card">
+                    {/* sprites.front_default 속성의 이미지를 사용합니다. */}
+                    <img src={pokemonDetails.sprites.front_default} alt={pokemon.name} />
+                    <div className="info">
+                        {/* 포켓몬 ID(번호)와 이름을 표시합니다. */}
+                        <h2>No. {pokemonDetails.id}</h2>
+                        <h3>name: {pokemonDetails.name}</h3>
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. PokemonList 컴포넌트: API 요청, 상태 관리 및 렌더링을 담당합니다.
+        function PokemonList() {
+            const [pokemonList, setPokemonList] = useState([]); // 포켓몬 목록 상태
+
+            useEffect(() => {
+                // API를 호출하여 전체 포켓몬 목록을 가져옵니다.
+                fetch('https://pokeapi.co/api/v2/pokemon?limit=20') // (예시로 20마리만)
+                    .then(response => response.json())
+                    .then(data => {
+                        setPokemonList(data.results); // 가져온 결과를 state에 저장
+                    });
+            }, []); // 빈 배열 '[]'을 추가하여 최초 1번만 실행되도록 합니다.
+
+            return (
+                <div className="pokemon-list">
+                    {/* pokemonList 배열을 순회하며 각 포켓몬에 대한 Card 컴포넌트를 렌더링합니다. */}
+                    {pokemonList.map(pokemon => (
+                        <Card key={pokemon.name} pokemon={pokemon} />
+                    ))}
+                </div>
+            );
+        }
+
+        // 3. Title 컴포넌트는 제목만 담당하도록 단순화했습니다.
+        function Title() {
+            return <h1>포켓몬 도감</h1>;
+        }
+
+        // 4. App 컴포넌트: 전체 컴포넌트를 조합합니다.
+        function App() {
+            return (
+                <>
+                    <Title />
+                    <PokemonList />
+                </>
+            );
+        }
+
+        // ReactDOM 렌더링
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+    </script>
+   
+</body>
+</html>
+
+
+=======================================================================
+
+2와 3의 차이점 
+차이점 상세 비교
+항목 |	코드 2 |	코드 3
+제목 |	포켓몬 목록 |	포켓몬 도감
+포켓몬 수 제한	|기본값 (20개, limit 미지정) | ?limit=20으로 명시
+카드 로딩 처리 |	pokemonDetails가 없으면 아무 것도 렌더링 안 함 |	!pokemonDetails 시 "Loading..." 표시
+스타일, 마크업 |	동일 |	 동일
+코드 설명 | 주석	거의 없음 |	구조적 설명 주석이 풍부
+데이터 fetch 후 콘솔 출력 | console.log(pokemonList) 있음 |	없음
+코드 품질/가독성 | 약간 러프함 | 정리된 구조, 가독성 좋음
+
+================================================================
+
+** 외부 스크립트 불러오기
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+- React: React 라이브러리
+- ReactDOM: React를 실제 DOM에 렌더링하기 위한 라이브러리
+- Babel: 최신 JS(특히 JSX)를 브라우저에서 실행 가능하게 변환하는 도구
+✅ Babel을 사용했기 때문에 script 태그에 type="text/babel"을 사용합니다.
+
+** HTML 바디 – React 앱을 넣을 위치
+<div id="root"></div>
+- React가 화면에 그려질 위치
+- ReactDOM.createRoot(...).render(...)를 통해 여기에 컴포넌트를 렌더링합니다
+
+** React 코드 시작
+<script type="text/babel">
+- 여기부터는 JSX 문법으로 React 컴포넌트를 작성합니다.
+
+** React 훅 불러오기
+const { useEffect, useState } = React;
+- useState: 상태 저장 (데이터를 저장하고 변경 가능)
+- useEffect: 컴포넌트가 처음 렌더링될 때 또는 어떤 값이 바뀔 때 특정 동작 실행
+
+** PokemonList 컴포넌트 (중요)
+function PokemonList() {
+    const [pokemonList, setPokemonList] = useState([]);
+
+    useEffect(() => {
+        fetch("https://pokeapi.co/api/v2/pokemon")
+            .then(response => response.json())
+            .then(data => setPokemonList(data.results))
+    }, []);
+- useState([]): 포켓몬 데이터를 저장할 배열 생성
+- useEffect: 페이지가 처음 로드될 때 1번만 실행
+- fetch(...): 포켓몬 API 호출
+- .then(...): 결과를 JSON으로 변환한 뒤, data.results를 상태에 저장
+
+    return (
+        <div className="pokemon-list">
+            {pokemonList.map(pokemon => (
+                <Card key={pokemon.name} pokemon={pokemon} />
+            ))}
+        </div>
+    );
+}
+- pokemonList를 순회하며 <Card /> 컴포넌트로 하나씩 렌더링
+- key는 React에서 필수 (항목 구분용)
+
+** Card 컴포넌트 (각 포켓몬 세부 정보 렌더링)
+function Card({pokemon}) {
+    const [pokemonDetails, setPokemonDetails] = useState();
+
+    useEffect(() => {
+        fetch(pokemon.url)
+            .then(response => response.json())
+            .then(data => setPokemonDetails(data))
+    }, [pokemon.url]);
+- pokemon이라는 객체(props)를 받아옴 (예: { name: "bulbasaur", url: "..." })
+- 이 url을 이용해 해당 포켓몬의 자세한 정보를 다시 fetch
+- 받아온 데이터는 sprites.front_default에 이미지, id, name 포함
+
+    return (
+        pokemonDetails && (
+            <div className="card">
+                <img src={pokemonDetails.sprites.front_default} alt={pokemon.name} />
+                <div className="info">
+                    <h2>No. {pokemonDetails.id}</h2>
+                    <h3>name: {pokemonDetails.name}</h3>
+                </div>         
+            </div>
+        )
+    );
+}
+- 데이터가 있을 때만 카드 렌더링
+- 포켓몬 이미지, ID, 이름을 표시
+
+** App 컴포넌트
+
+📌 전체 요약
+컴포넌트 |	역할
+Title	| 제목 출력
+PokemonList |	포켓몬 리스트 API 호출 및 <Card /> 목록 렌더링
+Card |	개별 포켓몬 상세 정보 API 호출 후 이미지/이름 렌더링
+App |	전체 구성 묶는 컨테이너
+ReactDOM.createRoot(...).render(...)	| 브라우저에 최종 출력
+
+
+
+
+
