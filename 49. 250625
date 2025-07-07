@@ -1,1 +1,75 @@
+JPQL Projection
 
+JPQL에서 프로젝션(Projection)은 SELECT 절에 조회할 대상을 지정하는 것을 의미합니다. 
+조회 대상에 따라 엔티티, 임베디드 타입, 스칼라 타입, DTO의 4가지 방식이 있습니다.
+
+1. 엔터티 프로젝션 (Entity Projection)
+엔티티 자체를 조회 대상으로 지정하는 가장 기본적인 방식입니다. 
+JPQL에서 조회된 엔티티는 영속성 컨텍스트가 관리하므로, 이후 수정하면 트랜잭션 커밋 시 변경 감지(Dirty Checking)가 동작하여 
+UPDATE 쿼리가 자동으로 실행됩니다.
+
+문법: SELECT [엔티티 별칭] FROM [엔티티]
+
+활용: 조회한 엔티티의 데이터를 수정해야 할 때 유용합니다.
+
+// Member 엔티티 전체를 조회
+String jpql = "SELECT m FROM Member m";
+TypedQuery<Member> query = em.createQuery(jpql, Member.class);
+List<Member> members = query.getResultList();
+
+// 조회된 member는 영속성 컨텍스트가 관리
+Member foundMember = members.get(0);
+foundMember.setUsername("새로운이름"); // 트랜잭션 커밋 시 UPDATE 쿼리 실행됨
+
+2. 임베디드 타입 프로젝션 (Embedded Type Projection)
+엔티티에 포함된 임베디드 타입(@Embedded)을 직접 조회합니다. 
+임베디드 타입은 엔티티의 값 타입이므로, 조회된 결과는 영속성 컨텍스트에서 관리되지 않습니다.
+
+문법: SELECT [엔티티 별칭].[임베디드 타입 필드명] FROM [엔티티]
+
+활용: 주소(Address)와 같이 특정 값 객체 정보만 필요할 때 사용됩니다.
+
+// 회원의 주소(Address) 정보만 조회
+String jpql = "SELECT m.address FROM Member m";
+TypedQuery<Address> query = em.createQuery(jpql, Address.class);
+List<Address> addresses = query.getResultList();
+
+3. 스칼라 타입 프로젝션 (Scalar Type Projection)
+이름, 나이, 수량 등 숫자, 문자, 날짜 같은 기본 데이터 타입을 하나 이상 조회합니다. 
+스칼라 타입 역시 영속성 컨텍스트에서 관리되지 않습니다. 여러 필드를 조회하면 List<Object[]> 형태로 결과를 반환받습니다.
+
+문법: SELECT [필드 1], [필드 2], ... FROM [엔티티]
+
+활용: 통계 데이터를 구하거나 특정 필드 몇 개만 간단히 확인할 때 사용합니다.
+
+// 회원의 이름과 나이만 조회
+String jpql = "SELECT m.username, m.age FROM Member m";
+Query query = em.createQuery(jpql);
+List<Object[]> resultList = query.getResultList(); // [[ "홍길동", 25 ], [ "김영희", 30 ]]
+
+for (Object[] row : resultList) {
+    String username = (String) row[0];
+    Integer age = (Integer) row[1];
+    System.out.println("이름: " + username + ", 나이: " + age);
+}
+
+4. new 명령어를 활용한 프로젝션 (DTO Projection) 🚀
+스칼라 타입 조회의 단점(타입 캐스팅, 지저분한 코드)을 해결하는 가장 실용적인 방법입니다. 
+조회할 필드들을 DTO(Data Transfer Object) 로 바로 생성하여 반환받습니다. 이 DTO 객체는 영속성 컨텍스트에서 관리되지 않습니다.
+
+문법: SELECT new [DTO 전체 경로]([필드 1], [필드 2], ...)
+
+활용: API 응답 등 화면에 필요한 특정 데이터 묶음을 만들 때 매우 유용합니다.
+
+// MemberDto 클래스 (생성자가 JPQL 필드 순서와 일치해야 함)
+package com.example.dto;
+public class MemberDto {
+    private String username;
+    private int age;
+    // 생성자, getter, setter ...
+}
+
+// JPQL에서 new 명령어로 MemberDto를 직접 조회
+String jpql = "SELECT new com.example.dto.MemberDto(m.username, m.age) FROM Member m";
+TypedQuery<MemberDto> query = em.createQuery(jpql, MemberDto.class);
+List<MemberDto> memberDtos = query.getResultList();
