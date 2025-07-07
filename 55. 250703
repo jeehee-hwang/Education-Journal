@@ -1,1 +1,212 @@
 영화진흥위원회 api로 일별박스오피스, 상세내용으로 웹사이트 만듬 
+* page.js는 이름을 변경하면 안됨, 상위 폴더를 만들고 하위 파일에 page.js로 해야 인식함 
+
+
+-----------------------------------------------------------
+D:\lecture\13_React\05_router\04_boxoffice\src\api\MovieAPI.js
+const BASE_URL = 'http://www.kobis.or.kr/kobisopenapi/webservice/rest/';
+const API_KIY = '08d6fd1b31a37c67569ab2f9a983f576';
+
+/* 어제 날짜를 포맷에 맞춰 변환하는 함수*/
+const getDataFormat = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() +1 < 10 ?  '0' + (today.getMonth() + 1) : today.getMonth() +1;
+    const date = today.getDate() - 1 < 10 ? '0' + (today.getDate() -1 ) : today.getDate() -1 ; 
+    return`${year}${month}${date}`
+}
+
+/* 일별 박스 오피스*/
+export async function getMovieList ( ) {
+    
+    const url = `${BASE_URL}boxoffice/searchDailyBoxOfficeList.json?key=${API_KIY}&targetDt=${getDataFormat()}`;
+
+    const response = await fetch(url); 
+    const data = await response.json(); 
+
+    console.log(data); 
+
+    return data.boxOfficeResult.dailyBoxOfficeList; 
+
+}
+
+/* 영화 코드 전달하여 영화 상세 정보 조회*/
+export async function getMovieDetail (movieCd) { 
+    
+    const url = `${BASE_URL}movie/searchMovieInfo.json?key=${API_KIY}&movieCd=${movieCd}`
+    const response = await fetch(url); 
+    const data = await response.json(); 
+
+    console.log(data); 
+
+    return data.movieInfoResult.movieInfo;
+}
+
+-------------------------------------
+
+D:\lecture\13_React\05_router\04_boxoffice\src\app\componenets
+===============================
+export default function Footer() {
+    return(
+        <footer className="footer">
+            <p>카피라이터 2025</p>
+        </footer>
+    )
+}
+
+===============================
+export default function Header() {
+    return(
+        <header className="header">
+            환영합니다! 박스 오피스
+        </header>
+    )
+}
+
+===============================
+import Header from "./Header";
+import Footer from "./Footer";
+
+export default function Layout({children} ) {
+    return(
+        <>
+                <Header/>
+                {children}
+                <Footer/>
+        </>
+    )
+}
+
+
+===============================
+import Link from "next/link";
+
+export default function MovieItem({movie}) {
+    return (
+
+        <Link href={`/movie/${movie.movieCd}`}>
+            <div className="item"> 
+                <h3>순위 :  {movie.rank} </h3>
+                <h2>{movie.movieNm}</h2> 
+                <h4>개봉일 : {movie.openDt}</h4>  
+                <h4>누적 관객수 : { Number(movie.audiAcc).toLocaleString() } 명 </h4>    
+             </div>
+            
+        </Link>
+
+    )
+}
+
+------------------------------------
+
+D:\lecture\13_React\05_router\04_boxoffice\src\app\movie\[movieCd]\page.js
+====================================
+'use client'; 
+import { getMovieDetail } from "@/api/MovieAPI";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+export default function MovieDetail() {
+
+    const { movieCd } = useParams(); 
+
+    const [ movie, setMovie] = useState();
+
+    useEffect ( () => {
+        getMovieDetail( movieCd).then( data => setMovie(data)); 
+    }, []); 
+
+    return(
+        <div className="content-col">
+            {movie &&
+                <>
+                    <h1>{movie.movieNm}({movie.movieNmEn})</h1>
+                    <div> 러닝타임 : {movie.showTm} 분 </div>
+                    <div>
+                        국가 :  {movie.nations.map((nation, index) => <span key={index}>{nation.nationNm}</span>)}
+                    </div>
+                    <h4>출연</h4>
+                    <div>
+                        {movie.actors.map((actor, index) => {
+                            return (
+                                <div key={index}>
+                                    <span className='actor'>{actor.peopleNm}</span>
+                                    <span>{actor.cast && `-${actor.cast}역`}</span>
+                                 </div>   
+                            )
+                        })}
+                    </div>
+                    <Link href={'/movie'}>목록으로</Link>
+                </>
+            }
+        </div>
+    )
+
+}
+
+------------------------------------------
+
+D:\lecture\13_React\05_router\04_boxoffice\src\app\movie\page.js
+============================
+'use client'
+import { getMovieList } from "@/api/MovieAPI"; 
+import { useState , useEffect } from "react"
+import MovieItem from "../componenets/MovieItem";
+
+export default function MovieList () {
+
+    const [ movieList, setMovieList ] = useState([]);
+
+    useEffect ( () =>  {
+        getMovieList( ).then(data => setMovieList(data));
+    }, []); 
+    
+    return(
+        movieList &&
+        <div className="content-row">
+            { movieList.map( movie => <MovieItem key={movie.movieCd} movie={movie} />)}                    
+        </div>
+    ); 
+}
+
+------------------------------------------
+
+D:\lecture\13_React\05_router\04_boxoffice\src\app\layout.js
+============================
+import Layout from "./componenets/Layout";
+import "./globals.css";
+
+export const metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <Layout>
+          {children}
+        </Layout>
+      </body>
+    </html>
+  );
+}
+
+------------------------------------------
+
+D:\lecture\13_React\05_router\04_boxoffice\src\app\page.js
+============================
+import Link from "next/link";
+
+export default function Home() {
+ return(
+    <Link href="/movie"> 
+      <div className="content-row">
+        <h1> 박스오피스 영화 순위 보러가기</h1>
+      </div>
+    </Link>
+  );
+}
+
