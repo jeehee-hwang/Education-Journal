@@ -1,1 +1,145 @@
 React - Router
+
+React - Router 라우팅 사용법, 내용 설명
+
+React Router는 리액트(React) 애플리케이션에서 페이지 이동과 같은 라우팅을 구현하는 가장 인기 있는 라이브러리입니다. 
+사용자가 요청하는 URL에 따라 특정 컴포넌트를 보여주는 역할을 합니다. 
+
+1. 설치 🛠️
+먼저 프로젝트에 react-router-dom 라이브러리를 설치합니다.
+
+Bash
+
+npm install react-router-dom
+
+2. 기본 라우팅 설정
+라우팅을 적용하려면 애플리케이션의 최상위 컴포넌트(주로 index.js의 <App />)를 <BrowserRouter> 로 감싸야 합니다.
+
+src/index.js
+
+JavaScript
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { BrowserRouter } from 'react-router-dom';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+이제 App.js에서 <Routes> 와 <Route> 컴포넌트를 사용해 URL 경로(path)와 보여줄 컴포넌트(element)를 매핑합니다.
+
+src/App.js
+
+JavaScript
+
+import { Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import About from './pages/About';
+import Dashboard from './pages/Dashboard';
+
+function App() {
+  return (
+    <Routes>
+      {/* 기본 경로: http://localhost:3000 */}
+      <Route path="/" element={<Home />} />
+
+      {/* About 페이지: http://localhost:3000/about */}
+      <Route path="/about" element={<About />} />
+
+      {/* Dashboard 페이지: http://localhost:3000/dashboard */}
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
+  );
+}
+
+export default App;
+<Routes>: 여러 개의 <Route> 컴포넌트를 감싸는 컨테이너입니다.
+
+<Route>: path 속성에 URL 경로를, element 속성에 해당 경로에서 보여줄 컴포넌트를 지정합니다.
+
+3. 페이지 이동 (<Link> 컴포넌트) 🚀
+페이지 간 이동을 위해서는 일반적인 <a> 태그 대신 <Link> 컴포넌트를 사용합니다. <a> 태그는 페이지 전체를 새로고침하지만, <Link>는 페이지 새로고침 없이 URL만 변경하여 SPA(Single Page Application)의 장점을 유지합니다.
+
+JavaScript
+
+import { Link } from 'react-router-dom';
+
+function Navigation() {
+  return (
+    <nav>
+      <Link to="/">홈</Link> |{' '}
+      <Link to="/about">소개</Link> |{' '}
+      <Link to="/dashboard">대시보드</Link>
+    </nav>
+  );
+}
+to 속성에 이동할 경로를 지정합니다.
+
+4. 동적 라우팅과 URL 파라미터 (useParams)
+게시글 상세 페이지처럼 동적인 URL을 처리해야 할 때가 있습니다. 경로에 : 를 사용해 URL 파라미터를 설정할 수 있습니다.
+
+JavaScript
+
+// :id 부분이 동적으로 변하는 URL 파라미터
+<Route path="/users/:id" element={<UserProfile />} />
+해당 페이지 컴포넌트에서는 useParams 훅을 사용해 URL 파라미터 값을 가져올 수 있습니다.
+
+src/pages/UserProfile.js
+
+JavaScript
+
+import { useParams } from 'react-router-dom';
+
+function UserProfile() {
+  // URL의 :id 값을 가져옴
+  const { id } = useParams();
+
+  return (
+    <div>
+      <h1>사용자 프로필</h1>
+      <p>사용자 ID: {id}</p>
+      {/* 이 ID를 사용해 서버에서 사용자 정보를 가져올 수 있음 */}
+    </div>
+  );
+}
+5. 중첩 라우팅과 <Outlet>
+공통 레이아웃 안에 여러 하위 페이지를 보여주고 싶을 때 중첩 라우팅을 사용합니다. 부모 Route 안에 자식 Route를 중첩시키고, 부모 컴포넌트에는 자식 컴포넌트가 렌더링될 위치를 <Outlet /> 으로 지정합니다.
+
+App.js 설정
+
+JavaScript
+
+<Route path="/dashboard" element={<DashboardLayout />}>
+  {/* /dashboard 경로에서는 Profile이 기본으로 보임 */}
+  <Route index element={<Profile />} />
+
+  {/* /dashboard/settings */}
+  <Route path="settings" element={<Settings />} />
+</Route>
+src/layouts/DashboardLayout.js
+
+JavaScript
+
+import { Outlet, Link } from 'react-router-dom';
+
+function DashboardLayout() {
+  return (
+    <div>
+      <h2>대시보드</h2>
+      <nav>
+        <Link to="/dashboard">프로필</Link> |{' '}
+        <Link to="/dashboard/settings">설정</Link>
+      </nav>
+      <hr />
+      {/* 자식 라우트의 컴포넌트(Profile 또는 Settings)가 이 자리에 렌더링됨 */}
+      <Outlet />
+    </div>
+  );
+}
+<Outlet>: 자식 라우트의 element를 렌더링하는 플레이스홀더 역할을 합니다.
