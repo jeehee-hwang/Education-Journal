@@ -1,0 +1,142 @@
+프로젝트 실질 준비 (?)
+
+ 게시판, 게시판 고정, 게시글 entity 작성 
+
+=======================
+
+import com.ourhour.domain.org.entity.OrgEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "tbl_board")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class BoardEntity {
+
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long boardId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "org_id", nullable = false)
+    private OrgEntity orgEntity;
+
+    private String name;
+
+    private boolean isFixed;
+}
+
+=======================
+
+import com.ourhour.domain.member.entity.MemberEntity;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.io.Serializable;
+
+@Embeddable
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@EqualsAndHashCode
+public class BoardFixEntity implements Serializable {
+
+    @EmbeddedId
+    private BoardFixId id;
+
+    // BoardFix는 하나의 Board에 속함
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("boardId") // BoardFixId의 boardId 필드를 매핑
+    @JoinColumn(name = "board_id")
+    private BoardEntity boardEntity;
+
+    // BoardFix는 하나의 User에 속함
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("memberId") // BoardFixId의 memberId 필드를 매핑
+    @JoinColumn(name = "member_id")
+    private MemberEntity memberEntity;
+}
+
+
+=======================
+
+복합키라서  FixIdEntity를 따로 만들었음 
+
+import jakarta.persistence.Embeddable;
+import lombok.*;
+import java.io.Serializable;
+
+@Embeddable
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@EqualsAndHashCode
+public class BoardFixId implements Serializable {
+
+    private Long boardId;
+
+    // 구성원의 member_id
+    private Long memberId;
+
+    }
+
+=======================
+
+import com.ourhour.domain.member.entity.MemberEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "tbl_post")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class PostEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long postId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_id")
+    private BoardEntity boardEntity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id")
+    private MemberEntity authorEntity;
+
+    private String title;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String content;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+}
+
+=====================
+어노테이션 설명
+- Java의 JPA/Hibernate 및 Lombok 라이브러리에서 사용
+- 반복적인 코드 작성을 줄이고 가독성을 높여주는 역할을 합니다.
+
+Lombok 관련 어노테이션
+- Lombok은 어노테이션을 사용하여 상용구 코드(boilerplate code)를 자동으로 생성해주는 라이브러리입니다.
+  @NoArgsConstructor: 파라미터가 없는 기본 생성자를 자동으로 만들어줍니다. JPA 엔티티는 기본 생성자가 필수이므로 매우 유용하게 사용됩니다.
+  @AllArgsConstructor: 클래스의 모든 필드를 파라미터로 받는 생성자를 자동으로 생성합니다. 객체를 생성할 때 모든 필드 값을 한 번에 초기화하고 싶을 때 편리합니다.
+  @EqualsAndHashCode: equals()와 hashCode() 메소드를 자동으로 오버라이드(override) 해줍니다. 객체 간의 동등성을 비교하거나 해시 기반 컬렉션(e.g., HashMap, HashSet)에서 객체를 사용할 때 필수적인 메소드들입니다.
+
+JPA/Hibernate 관련 어노테이션
+- JPA는 Java 객체와 데이터베이스 테이블 간의 매핑을 관리하는 표준 명세이며, Hibernate는 그 구현체 중 하나입니다.
+@Embeddable: 이 어노테이션이 붙은 클래스는 다른 엔티티(Entity)에 포함될 수 있음을 의미합니다. 예를 들어, 주소(Address) 클래스를 @Embeddable로 만들면, 사용자(User)나 회사(Company) 같은 여러 엔티티에서 주소 정보를 재사용할 수 있습니다. 이렇게 포함된 클래스의 필드들은 해당 엔티티의 테이블 컬럼으로 매핑됩니다.
+@Lob: "Large Object"의 약자로, 대용량 데이터를 저장하는 필드에 사용합니다. 주로 아주 긴 문자열(CLOB)이나 이미지, 파일과 같은 바이너리 데이터(BLOB)를 데이터베이스에 저장할 때 지정합니다.
+@CreationTimestamp: 엔티티가 처음 저장될 때의 시간을 자동으로 기록해주는 Hibernate 어노테이션입니다. createdDate와 같은 필드에 붙이면, 별도의 코드 없이 데이터 생성 시점의 타임스탬프가 자동으로 저장됩니다.
