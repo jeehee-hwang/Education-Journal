@@ -1,1 +1,274 @@
+* 종료코드 0이라는 오류가 계속 남 
+데이터 베이스 삭제 및 코드 변경 계속 진행 
 
+**어노테이션 1 
+- @NoArgsConstructor 
+- @EqualsAndHashCode 
+
+@NoArgsConstructor와 @EqualsAndHashCode는 Lombok(롬복) 라이브러리에서 제공하는 어노테이션으로, 반복적으로 작성해야 하는 코드를 자동으로 생성해주는 역할을 합니다.
+
+@NoArgsConstructor: 기본 생성자 자동 생성 🏗️
+이 어노테이션은 파라미터가 없는 생성자(기본 생성자)를 자동으로 만들어줍니다.
+객체를 생성할 때 new Member()와 같이 아무런 인자 없이 생성할 수 있게 해주는 것이죠. JPA 같은 프레임워크에서 객체를 생성할 때 기본 생성자가 필요한 경우가 많아 자주 사용됩니다.
+
+✏️ 코드 예시 (Java)
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+public class Member {
+    private String name;
+    private int age;
+}
+위 코드는 Lombok에 의해 컴파일 시 아래와 같이 변경됩니다.
+
+
+// @NoArgsConstructor가 아래 코드를 자동으로 만들어줍니다.
+public class Member {
+    private String name;
+    private int age;
+
+    public Member() { // <--- 이 생성자가 자동으로 추가됩니다.
+    }
+}
+
+@EqualsAndHashCode: 객체 비교 메소드 자동 생성 ⚖️
+이 어노테이션은 자바 객체의 내용을 비교할 때 사용하는 equals() 메소드와 객체의 고유한 해시 코드를 반환하는 hashCode() 메소드를 자동으로 만들어줍니다.
+두 객체가 논리적으로 같은지(동등성) 비교하려면 이 두 메소드를 직접 재정의(Override)해야 하는데, 이 과정을 Lombok이 대신해주는 것입니다. 특히 HashMap이나 HashSet과 같은 컬렉션에서 객체를 키(key)로 사용하거나 중복을 제거할 때 반드시 필요합니다.
+
+equals(): 두 객체의 필드 값들이 모두 같은지 비교합니다.
+hashCode(): equals() 비교에 사용된 필드들을 바탕으로 해시 코드를 생성합니다. equals() 결과가 true인 두 객체는 반드시 동일한 hashCode() 값을 가져야 합니다.
+
+✏️ 코드 예시(Java)
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode
+public class User {
+    private String userId;
+    private String email;
+}
+위 코드는 Lombok에 의해 컴파일 시 아래와 같이 equals()와 hashCode() 메소드가 자동으로 추가됩니다.
+
+// @EqualsAndHashCode가 아래와 같은 메소드들을 자동으로 만들어줍니다.
+public class User {
+    private String userId;
+    private String email;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return java.util.Objects.equals(userId, user.userId) &&
+               java.util.Objects.equals(email, user.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(userId, email);
+    }
+}
+결론적으로 이 어노테이션들은 **'보일러플레이트(boilerplate) 코드'**라 불리는 반복적인 작업을 줄여주어, 개발자가 더 중요한 비즈니스 로직에 집중할 수 있도록 돕는 매우 유용한 도구입니다.
+
+** 어노테이션 2
+- @Id
+- @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+private Long postId;
+
+해당 코드는 데이터베이스 테이블의 **기본 키(Primary Key)**를 설정하는 JPA(Java Persistence API) 어노테이션입니다.
+간단히 말해, postId라는 필드가 이 데이터의 고유한 식별자이며, 이 값은 데이터베이스가 자동으로 생성하고 관리한다는 의미입니다.
+각 부분을 자세히 살펴보겠습니다.
+
+@Id: 기본 키(Primary Key) 지정 🔑
+@Id 어노테이션은 이 필드가 테이블의 기본 키(PK) 역할을 한다는 것을 나타냅니다.
+
+기본 키는 테이블의 각 행(row)을 유일하게 식별할 수 있는 고유한 값입니다. 
+예를 들어, 게시글 테이블에서 각 게시글을 구분하는 '게시글 번호'와 같은 역할을 합니다. 모든 JPA 엔티티(@Entity)는 반드시 하나의 @Id 필드를 가져야 합니다.
+
+@GeneratedValue: 기본 키 값 자동 생성 ⚙️
+@GeneratedValue 어노테이션은 기본 키 값을 데이터베이스가 자동으로 생성하도록 위임하는 역할을 합니다. 개발자가 직접 postId에 값을 할당할 필요가 없어집니다.
+strategy = GenerationType.IDENTITY: 이 부분이 바로 키 생성 전략입니다. IDENTITY 전략은 키 생성을 전적으로 데이터베이스에 맡기는 방식입니다.
+
+주로 MySQL, PostgreSQL, MariaDB의 AUTO_INCREMENT 기능이나 SQL Server의 IDENTITY 컬럼과 함께 사용됩니다.
+데이터가 데이터베이스에 INSERT 될 때, 데이터베이스가 알아서 고유한 ID를 생성하고, 그 값을 postId 필드에 반영해 줍니다.
+
+종합: 그래서 무슨 뜻인가요?
+이 세 줄의 코드를 종합하면 다음과 같습니다.
+
+"Post 엔티티의 postId 필드는 이 테이블의 기본 키(PK)이며, 새로운 Post 데이터가 저장될 때마다 데이터베이스가 자동으로 1씩 증가하는 고유 번호(예: 1, 2, 3, ...)를 부여한다."
+은행에서 번호표를 뽑는 것처럼, 새로운 데이터가 생길 때마다 시스템이 알아서 순서대로 고유 번호를 붙여주는 것이라고 생각하면 쉽습니다.
+
+** 어노테이션 3
+- @GeneratedValue 
+
+@GeneratedValue를 생략하는 경우는 주로 기본 키(PK)로 데이터베이스가 생성하는 숫자(Auto Increment, Sequence 등) 대신 의미 있는 다른 값을 사용할 때입니다.
+@GeneratedValue를 사용하지 않는 경우 (직접 할당) ✏️
+이 방식은 기본 키가 비즈니스 로직상 자연스럽게 생성되거나 이미 존재하는 고유 값을 사용할 때 적합합니다.
+
+주요 사용 사례:
+자연 키(Natural ID)를 사용하는 경우
+학번: 학생의 학번은 입학과 동시에 부여되는 고유한 값이므로 기본 키로 사용하기에 적합합니다.
+이메일 주소: 사용자의 이메일은 시스템 내에서 고유해야 하므로 그 자체를 기본 키로 사용할 수 있습니다.
+ISBN: 책의 국제 표준 도서 번호는 전 세계적으로 고유하므로 기본 키로 사용할 수 있습니다.
+애플리케이션에서 직접 고유 ID를 생성하는 경우
+UUID(Universally Unique Identifier): 분산 시스템 환경에서 ID가 충돌할 걱정 없이 애플리케이션이 직접 고유한 문자열 ID를 생성하여 설정할 수 있습니다.
+
+코드 예시 (이메일을 기본 키로 사용하는 회원 클래스) (Java)
+
+@Entity
+public class Member {
+
+    @Id // 기본 키로 지정
+    private String email; // @GeneratedValue 없음!
+
+    private String username;
+
+    // 기본 생성자
+    public Member() {}
+
+    // 생성자
+    public Member(String email, String username) {
+        this.email = email; // 생성 시 직접 email(ID)을 할당
+        this.username = username;
+    }
+}
+
+// 서비스 로직에서 사용하는 방법
+Member newMember = new Member("user@example.com", "John"); // 객체 생성 시 ID(email)를 직접 부여
+memberRepository.save(newMember); // 저장
+위 코드처럼 @GeneratedValue가 없으면, memberRepository.save()를 호출하기 전에 email 필드에 반드시 값이 할당되어 있어야 합니다. 값이 null이면 예외가 발생합니다.
+
+결론 🔑
+@GeneratedValue 사용: 기본 키에 특별한 의미가 없고, 데이터베이스가 생성해주는 **단순 증가 숫자(1, 2, 3...)**를 사용할 때 편리합니다. (자동 생성)
+@GeneratedValue 미사용: 학번, 이메일, UUID처럼 비즈니스적으로 의미가 있거나 애플리케이션에서 직접 생성해야 하는 고유 값을 기본 키로 사용할 때 선택합니다. (수동 할당)
+
+** 게시판, 게시글 프로젝트 
+일반적인 게시글: @GeneratedValue 사용 (👍 추천)
+대부분의 게시판은 데이터베이스가 자동으로 생성해주는 숫자 ID를 사용합니다. 이것이 가장 간단하고 직관적인 방법입니다.
+
+장점: 개발이 매우 편리하고, 데이터베이스가 알아서 ID를 관리해주므로 신경 쓸 필요가 없습니다. URL도 /posts/123처럼 간결하고 보기 좋습니다.
+단점: ID가 순서대로 예측 가능하여, 보안이 중요한 게시물이라면 다른 사람이 URL을 추측하여 접근을 시도할 수 있습니다.
+
+✏️ 일반적인 게시글 ID 설정 코드 (Java)
+@Entity
+public class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // DB가 자동으로 1, 2, 3... 순서로 ID를 생성
+
+    private String title;
+    private String content;
+    // ...
+}
+
+특별한 경우: 직접 할당 (UUID 사용)
+만약 URL을 통해 다른 게시물을 추측하는 것을 막고 싶거나, 여러 서버에서 동시에 게시글을 생성하는 분산 환경이라면 @GeneratedValue를 사용하지 않고 UUID와 같은 고유 값을 직접 할당하는 것이 더 나을 수 있습니다.
+
+장점: ID가 무작위 문자열이라 추측이 불가능하여 보안에 유리합니다.
+단점: URL이 /posts/f47ac10b-58cc-4372-a567-0e02b2c3d479처럼 길고 복잡해지며, ID를 직접 생성하고 할당하는 코드가 추가되어야 합니다.
+
+✏️ UUID를 ID로 사용하는 게시글 코드(Java)
+
+@Entity
+public class Post {
+
+    @Id
+    private String id; // @GeneratedValue 없음
+
+    private String title;
+    private String content;
+
+    public Post() {
+        this.id = java.util.UUID.randomUUID().toString(); // 객체 생성 시 고유한 ID를 직접 생성
+    }
+    // ...
+}
+
+상황	/ 추천 방식 / 	이유
+대부분의 블로그, 커뮤니티 게시판/ 	@GeneratedValue 사용 / 개발이 쉽고 간단하며, 일반적인 요구사항에 가장 적합합니다.
+비공개 게시물, 외부에 ID 노출을 최소화해야 할 때	/ 직접 할당 (UUID 등) /	ID 추측을 막아 보안을 강화할 수 있습니다.
+여러 서버에서 동시에 데이터를 생성하는 분산 환경일 때 / 직접 할당 (UUID 등) / ID 충돌 없이 고유한 값을 보장할 수 있습니다.
+
+결론적으로, 특별한 보안 요구나 시스템 아키텍처상의 이유가 없다면 게시글에는 @GeneratedValue를 사용하는 것이 가장 좋습니다.
+
+** 어노테이션 4
+@JoinColumn(name = "org_id", nullable = false)
+
+private OrgEntity orgEntity;
+
+nullable = false을 꼭 써야해?
+
+nullable = false는 두 테이블의 관계가 필수적인지 선택적인지에 따라 결정됩니다.
+nullable = false의 의미
+이 옵션은 데이터베이스 테이블의 FOREIGN KEY 컬럼에 NOT NULL 제약 조건을 추가하는 역할을 합니다.
+
+nullable = false를 쓰면: org_id 컬럼은 항상 값을 가져야 합니다. 즉, OrgEntity와의 관계가 필수적이라는 의미입니다. 해당 엔티티는 OrgEntity 없이는 데이터베이스에 저장될 수 없습니다.
+
+nullable = false를 안 쓰거나 true로 설정하면 (기본값): org_id 컬럼은 NULL 값을 가질 수 있습니다. 즉, OrgEntity와의 관계가 선택적이라는 의미입니다. OrgEntity 없이도 엔티티가 저장될 수 있습니다.
+
+언제 사용해야 할까?
+nullable = false를 사용하는 경우 (필수 관계)
+두 엔티티의 관계가 반드시 존재해야 할 때 사용합니다.
+게시글과 작성자: 모든 게시글은 반드시 작성자를 가져야 합니다.
+주문과 고객: 모든 주문은 반드시 주문한 고객이 있어야 합니다.
+사원과 부서: 모든 사원은 반드시 소속된 부서가 있어야 합니다.
+
+✏️ 코드 예시 (게시글) (Java)
+
+// Post.java
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "user_id", nullable = false) // 모든 게시글은 user가 반드시 있어야 함
+private User user;
+nullable = false를 사용하지 않는 경우 (선택적 관계)
+관계가 있어도 되고 없어도 될 때 생략합니다.
+
+사용자와 추천인: 사용자는 추천인이 있을 수도 있고 없을 수도 있습니다.
+
+파일과 게시글: 게시글에 첨부 파일이 있을 수도 있고 없을 수도 있습니다.
+
+✏️ 코드 예시 (사용자) (Java)
+
+// User.java
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "recommender_id") // 추천인은 없을 수도 있으므로 nullable = false를 생략
+private User recommender;
+결론
+"이 관계가 없으면 데이터가 성립되지 않는가?"
+
+이 질문에 **"네"**라고 답할 수 있다면 nullable = false를 사용하고, **"아니요"**라면 생략하거나 nullable = true를 사용하면 됩니다. 이는 데이터의 무결성을 지키는 중요한 설정입니다.
+
+
+
+** 컨트롤러와 서비스의 차이점이 뭐야?
+
+컨트롤러(Controller)는 외부의 요청을 받고 응답하는 창구 역할을 하며, 서비스(Service)는 실질적인 비즈니스 로직을 처리하는 역할을 합니다.
+쉽게 말해, 컨트롤러는 **"무엇을 해야 하는지"**만 결정하고, 서비스는 **"어떻게 처리할지"**를 담당합니다.
+
+- 컨트롤러 (Controller) 🛂
+컨트롤러는 애플리케이션의 가장 바깥쪽 계층으로, 사용자의 HTTP 요청(Request)을 가장 먼저 받습니다.
+
+주요 역할:
+HTTP 요청과 응답(Response) 처리
+URL 주소(Endpoint)와 요청을 매핑
+요청으로 들어온 데이터(파라미터, JSON 등)의 유효성 검사
+적절한 서비스 계층의 메소드를 호출하여 작업 위임
+서비스로부터 받은 결과물을 사용자에게 반환 (HTML, JSON 등)
+컨트롤러는 비즈니스 로직을 포함하지 않아야 합니다. 레스토랑의 '지배인'처럼 손님(사용자)을 맞이하고 주문(요청)을 받아 주방(서비스)에 전달하는 역할만 수행합니다.
+
+- 서비스 (Service) 🧑‍🍳
+서비스는 컨트롤러로부터 작업을 위임받아 애플리케이션의 핵심 비즈니스 로직을 수행하는 계층입니다.
+
+주요 역할:
+비즈니스 규칙에 맞는 데이터 처리 및 가공
+트랜잭션(Transaction) 관리
+필요한 경우, 데이터베이스에 접근하는 리포지토리(Repository)를 호출하여 데이터 CRUD(생성, 조회, 수정, 삭제) 작업 수행
+여러 리포지토리를 조합하여 복잡한 작업 처리
+서비스는 레스토랑의 '주방장(셰프)'과 같습니다. 지배인에게 받은 주문대로 실제 요리(비즈니스 로직)를 만드는 곳입니다.
+
+한눈에 보는 차이점
+구분 | 컨트롤러 (Controller) / 서비스 (Service)
+역할 |	외부 요청 접수 및 응답 (교통정리) / 핵심 비즈니스 로직 처리 (실질적인 작업 수행)
+관심사 | HTTP, URL, 파라미터, View	데이터 처리, 트랜잭션, 비즈니스 규칙
+로직 | 비즈니스 로직 없음 /	순수한 비즈니스 로직만 존재
+의존성 |	Service 계층을 호출함 / Repository 계층을 호출함
