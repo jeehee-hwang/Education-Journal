@@ -1,1 +1,327 @@
+- 프로젝트 게시판 
 
+
+1. BoardService.java의 문제점 및 수정 제안
+가장 시급하고 중요한 수정이 필요한 파일입니다.
+
+1.1. createBoard 메소드: 연관 관계 설정 오류 (치명적)
+문제점:
+createBoard 메소드 내에서 BoardEntity를 생성할 때, 연관된 OrgEntity를 설정하는 orgReference 변수가 정의되어 있지 않아 컴파일 오류가 발생합니다. orgId 파라미터를 받고 있지만 실제 로직에서 사용되지 않고 있습니다.
+
+해결 방안:
+orgId를 사용해 OrgRepository에서 OrgEntity에 대한 참조를 조회한 후, BoardEntity를 생성할 때 설정해주어야 합니다. JpaRepository의 getReferenceById() 메소드를 사용하면 실제 엔티티를 조회하지 않고 프록시(참조)만 가져올 수 있어 효율적입니다.
+
+수정 코드 예시:
+OrgRepository를 먼저 서비스에 주입해야 합니다. (해당 파일이 없으므로 추가했다고 가정합니다.)
+
+Java
+
+package com.ourhour.domain.board.service;
+
+import com.ourhour.domain.board.dto.BoardDTO;
+import com.ourhour.domain.board.mapper.BoardMapper;
+import com.ourhour.domain.board.dto.BoardResponseDTO;
+import com.ourhour.domain.board.entity.BoardEntity;
+import com.ourhour.domain.board.repository.BoardRepository;
+import com.ourhour.domain.org.entity.OrgEntity;
+import com.ourhour.domain.org.repository.OrgRepository; // OrgRepository import 추가
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors; // Stream API import
+
+@Service
+@RequiredArgsConstructor
+public class BoardService {
+
+    private final BoardRepository boardRepository;
+    private final OrgRepository orgRepository; // OrgRepository 주입
+    private final BoardMapper boardMapper;
+
+    // ... (getBoardList 메소드)
+
+    @Transactional // 데이터 변경이 있으므로 트랜잭션 처리
+    public BoardResponseDTO createBoard(Long orgId, BoardDTO create) {
+        // orgId를 사용하여 OrgEntity 참조를 가져옴
+        OrgEntity orgEntity = orgRepository.getReferenceById(orgId);
+
+        BoardEntity newBoard = BoardEntity.builder()
+                .name(create.getName())
+                .isFixed(create.isFixed())
+                .orgEntity(orgEntity) // 가져온 참조로 OrgEntity 설정
+                .build();
+
+        boardRepository.save(newBoard);
+        return boardMapper.toBoardResponseDTO(newBoard);
+    }
+
+    // ... (이하 코드)
+}
+
+1.2. modifyBoard 메소드: 트랜잭션 부재 및 예외 처리 미흡
+문제점:
+@Transactional 어노테이션이 없어 JPA의 더티 체킹(Dirty Checking) 기능이 동작하지 않습니다. 즉, boardEntity.update(...)를 호출해도 데이터베이스에 변경 사항이 반영되지 않습니다.
+게시판 ID(boardId)로 데이터를 찾지 못했을 때 null을 반환합니다. 이 경우 Controller는 200 OK와 함께 비어있는 body를 응답하게 되어, 클라이언트 입장에서 성공인지 실패인지 명확히 알기 어렵습니다.
+
+해결 방안:
+메소드에 @Transactional 어노테이션을 추가하여 변경 감지 기능이 동작하도록 합니다.
+findById로 조회한 결과가 없을 경우 null 대신, 직접 만드신 BoardException이나 EntityNotFoundException 같은 예외를 발생시켜 404 Not Found 응답을 유도하는 것이 좋습니다.
+
+수정 코드 예시:
+// BoardService.java 내
+import com.ourhour.domain.board.exceptions.BoardException; // 예외 import
+import jakarta.persistence.EntityNotFoundException; // 혹은 JPA 예외 사용
+
+// ...
+
+@Transactional // 트랜잭션 추가
+public BoardResponseDTO modifyBoard(Long boardId, BoardDTO request) {
+    // findById 대신 orElseThrow를 사용하여 없을 경우 예외 발생
+    BoardEntity boardEntity = boardRepository.findById(boardId)
+            .orElseThrow(() -> new EntityNotFoundException("해당 ID의 게시판을 찾을 수 없습니다: " + boardId));
+            // 혹은 .orElseThrow(BoardException::boardNotFoundException); 와 같이 커스텀 예외 사용
+
+    // update 메소드를 호출하면 트랜잭션 종료 시 자동으로 DB에 반영됨
+    boardEntity.update(request.getName(), request.isFixed());
+
+    // boardRepository.save()를 호출할 필요 없음
+    return boardMapper.toBoardResponseDTO(boardEntity);
+}
+
+1.3. deleteBoard 메소드: 예외 처리 미흡
+문제점:
+modifyBoard와 유사하게, 삭제할 게시판이 존재하지 않을 경우 아무 일도 일어나지 않고 정상 응답(200 OK)을 반환합니다. 이는 API 사용자에게 혼란을 줄 수 있습니다.
+해결 방안:
+deleteById는 ID가 없을 경우 EmptyResultDataAccessException을 발생시킵니다. 이를 그대로 사용하거나, 더 명확한 제어를 위해 findById로 먼저 조회 후 삭제하는 방법을 사용할 수 있습니다.
+
+수정 코드 예시:
+// BoardService.java 내
+
+@Transactional // 트랜잭션 추가
+public void deleteBoard(Long boardId) {
+    // 먼저 엔티티가 존재하는지 확인
+    BoardEntity board = boardRepository.findById(boardId)
+            .orElseThrow(() -> new EntityNotFoundException("해당 ID의 게시판을 찾을 수 없습니다: " + boardId));
+    
+    // 존재하면 삭제
+    boardRepository.delete(board);
+}
+
+1.4. getBoardList 메소드: 코드 간소화 제안
+문제점:
+현재 로직은 기능적으로 문제가 없지만, Java Stream API를 사용하면 더 간결하고 가독성 높게 코드를 작성할 수 있습니다.
+
+해결 방안:
+// BoardService.java 내
+
+@Transactional(readOnly = true) // 조회 전용 트랜잭션
+public List<BoardResponseDTO> getBoardList(Long orgId) {
+    return boardRepository.findAllByOrgEntity_OrgId(orgId)
+            .stream()
+            .map(boardMapper::toBoardResponseDTO) // Entity를 DTO로 매핑
+            .collect(Collectors.toList()); // List로 변환
+}
+
+2. BoardException.java
+검토 의견:
+authorNotFoundException이라는 정적 메소드는 '게시판(Board)' 도메인의 예외와는 다소 거리가 있어 보입니다. 아마 '게시글(Post)'이나 다른 도메인에서 사용될 법한 내용입니다. BoardNotFoundException과 같이 게시판 도메인에 더 적합한 예외를 정의하는 것이 좋아 보입니다.
+
+수정 제안:
+package com.ourhour.domain.board.exceptions;
+
+import com.ourhour.global.exception.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class BoardException extends BusinessException {
+    public BoardException(int status, String message) {
+        super(status, message);
+    }
+
+    public static BoardException boardNotFoundException() {
+        return new BoardException(HttpStatus.NOT_FOUND.value(), "해당 게시판을 찾을 수 없습니다.");
+    }
+}
+
+3. 그 외 파일들 (Entity, Controller, Repository, DTO, Mapper)
+제공해주신 다른 파일들은 역할에 맞게 잘 작성되었습니다.
+
+BoardEntity.java: @ManyToOne 연관 관계 설정이 올바릅니다.
+BoardRepository.java: Spring Data JPA의 쿼리 메소드(findAllByOrgEntity_OrgId) 명명 규칙을 잘 따르고 있습니다.
+BoardController.java: 각 HTTP 메소드에 맞게 API 엔드포인트를 잘 설계했으며, Service를 호출하는 역할에 충실합니다.
+BoardDTO.java, BoardResponseDTO.java: 요청/응답에 따른 데이터 분리(DTO 패턴)를 잘 적용했습니다. 다만 BoardDTO의 postCount 필드는 게시판 생성/수정 시 사용되지 않으므로, 이 필드의 용도를 명확히 하거나 다른 DTO로 분리하는 것을 고려해볼 수 있습니다.
+BoardMapper.java: MapStruct를 사용하여 반복적인 변환 로직을 자동화한 점이 좋습니다.
+
+최종 요약
+BoardService의 createBoard에서 OrgEntity 연관 관계를 설정하는 로직을 반드시 추가해야 합니다. (가장 중요)
+데이터를 변경하는 서비스 메소드(create, modify, delete)에 @Transactional 어노테이션을 추가해야 합니다.
+데이터 조회 실패 시 null 반환 대신 예외를 발생시켜 Controller에서 404와 같은 명확한 실패 응답을 주도록 개선하는 것을 권장합니다.
+Java Stream API를 활용하여 코드를 더 간결하게 만들 수 있습니다.
+
+=======================================
+내가 작성한 코드 
+
+** Controller
+@RestController
+@RequestMapping("/api/organizations")
+@RequiredArgsConstructor
+public class BoardController {
+
+    private final BoardService boardService;
+
+    //게시판 전체 목록 조회
+    @GetMapping("/{orgId}/boards")
+    public ResponseEntity<ApiResponse<List<BoardResponseDTO>>> getBoardList(@OrgId @PathVariable Long orgId) {
+        List<BoardResponseDTO> boardResponseDTOList = boardService.getBoardList(orgId);
+        ApiResponse<List<BoardResponseDTO>> apiResponse = ApiResponse.success(boardResponseDTOList);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    // 게시판 등록
+    @PostMapping("/{orgId}/boards" )
+    public ResponseEntity<ApiResponse<BoardResponseDTO>> createBoard(@OrgId @PathVariable Long orgId, @RequestBody BoardDTO create) {
+        BoardResponseDTO newBoard = boardService.createBoard(orgId, create);
+        ApiResponse<BoardResponseDTO> apiResponse = ApiResponse.success(newBoard);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+   //게시판 수정
+    @PutMapping("/{orgId}/boards/{boardId}")
+    public ResponseEntity<ApiResponse<BoardResponseDTO>> modifyBoard(@OrgId @PathVariable Long orgId, @PathVariable Long boardId, @RequestBody BoardDTO modify) {
+        BoardResponseDTO boardResponseDTO = boardService.modifyBoard(boardId, modify);
+        return ResponseEntity.ok(ApiResponse.success(boardResponseDTO));
+    }
+
+  // 게시판 삭제
+    @DeleteMapping("/{orgId}/boards/{boardId}")
+    public ResponseEntity<ApiResponse<Void>> deleteBoard(@OrgId @PathVariable Long orgId, @PathVariable Long boardId) {
+        boardService.deleteBoard(boardId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+}
+
+** BoardDTO
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BoardDTO {
+
+    private Long boardId;
+    private String name;
+    private Long postCount;
+    private boolean isFixed;
+}
+
+** BoardResponseDTO
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+public class BoardResponseDTO {
+    private Long boardId;
+    private String name;
+}
+
+**  BoardEntity 
+@Entity
+@Table(name = "tbl_board")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class BoardEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long boardId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "org_id", nullable = false)
+    private OrgEntity orgEntity;
+
+    private String name;
+
+    private boolean isFixed;
+
+    public void update(String name, boolean isFixed) {
+        this.name = name;
+        this.isFixed = isFixed;
+    }
+}
+
+** BoardException
+public class BoardException extends BusinessException {
+    public BoardException(int status, String message) {
+        super(status, message);
+    }
+    public static BoardException authorNotFoundException() {
+        return new BoardException(404, "해당 작성자를 찾을 수 없습니다.");
+    }
+}
+
+** Mapper 
+@Mapper(componentModel = "spring")
+public interface BoardMapper {
+    // Entity -> DTO
+    BoardResponseDTO toBoardResponseDTO(BoardEntity boardEntity);
+}
+
+** BoardRepository 
+@Repository
+public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
+    List<BoardEntity> findAllByOrgEntity_OrgId(Long orgId);
+}
+
+** BoardService
+@Service
+@RequiredArgsConstructor
+public class BoardService {
+
+    private final BoardRepository boardRepository;
+    private final BoardMapper boardMapper;
+
+    // 게시판 목록 조회
+    public List<BoardResponseDTO> getBoardList(Long orgId) {
+        List<BoardEntity> boardEntityList = boardRepository.findAllByOrgEntity_OrgId(orgId);
+        List<BoardResponseDTO> boardResponseDTOList = new ArrayList<>();
+        for (BoardEntity boardEntity : boardEntityList) {
+            BoardResponseDTO boardResponseDTO = boardMapper.toBoardResponseDTO(boardEntity);
+            boardResponseDTOList.add(boardResponseDTO);
+            System.out.println("boardResponseDTO.getBoardId() = " + boardResponseDTO.getBoardId());
+            System.out.println("boardResponseDTO.getBoardId() = " + boardResponseDTO.getName());
+        }
+        return boardResponseDTOList;
+    }
+
+
+    public BoardResponseDTO createBoard(Long orgId, BoardDTO create) { // 👈 [해결] 5. orgId 파라미터 추가
+        BoardEntity newBoard = BoardEntity.builder()
+                .name(create.getName())
+                .isFixed(create.isFixed())
+                .orgEntity(orgReference) // orgEntity를 설정해줍니다.
+                .build();
+        boardRepository.save(newBoard);
+        return boardMapper.toBoardResponseDTO(newBoard);
+    }
+
+    // 게시판 수정
+    public BoardResponseDTO modifyBoard(Long boardId, BoardDTO request) {
+        Optional<BoardEntity> optionalBoard = boardRepository.findById(boardId);
+        if (optionalBoard.isPresent()) {
+            BoardEntity boardEntity = optionalBoard.get();
+            boardEntity.update(request.getName(), request.isFixed());
+            BoardResponseDTO boardResponseDTO = boardMapper.toBoardResponseDTO(boardEntity);
+            return boardResponseDTO;
+        }
+        return null;
+    }
+
+    // 게시판 삭제
+    public void deleteBoard(Long boardId) {
+        boolean isExists = boardRepository.existsById(boardId);
+        if (isExists) {
+            boardRepository.deleteById(boardId);
+        }
+    }
+}
