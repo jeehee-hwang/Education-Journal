@@ -1,1 +1,254 @@
+- 프로젝트 
+
+==================================================
+오류 : 종료 코드 0 
+
+인텔리제이에서 스프링부트 가동했을 때 종료 코드 0(으)로 완료된 프로세스로 뜨는데 왜 그런걸까? 
+톰캣도 깔았고 종속성도 다 추가 했음 
+
+ChatGPT의 말:
+인텔리제이에서 스프링부트를 실행했을 때 “종료 코드 0(으)로 완료된 프로세스”라고 뜨는 경우는, 애플리케이션이 정상적으로 실행되었다가 즉시 종료되었다는 의미입니다.
+톰캣도 있고, 종속성도 다 추가했다 하더라도, 실행 후 아무 작업 없이 종료되는 이유는 주로 아래 원인들 중 하나입니다:
+
+✅ 주요 원인 및 해결 방법
+1. main() 함수가 실행되자마자 종료되는 경우
+원인: SpringApplication.run() 호출 이후 아무 것도 하지 않고 종료되었을 수 있습니다.
+해결: @SpringBootApplication이 제대로 설정되어 있고, 실행 지점이 맞는지 확인하세요.
+@SpringBootApplication
+public class MyApp {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApp.class, args);
+    }
+}
+
+@SpringBootApplication 어노테이션이 빠졌거나,
+main() 안에 SpringApplication.run()이 빠졌거나,
+run() 호출 직후 System.exit() 등을 호출한 경우 즉시 종료됩니다.
+
+2. 웹 서버를 띄우지 않는 방식으로 설정된 경우
+원인: application.properties 또는 application.yml에서 웹 환경이 비활성화 되어 있을 수 있습니다.
+
+properties
+spring.main.web-application-type=none
+이 설정이 있으면 **웹 서버(Tomcat)**를 띄우지 않고, 앱이 바로 종료됩니다.
+
+🔧 해결 방법:
+properties
+spring.main.web-application-type=servlet
+혹은 해당 설정을 삭제하면 기본값으로 웹 애플리케이션이 실행됩니다.
+
+3. 빈 등록 실패 또는 예외 발생 후 즉시 종료
+원인: 스프링이 구동 도중 예외 발생 → 실행은 시작되었지만, 컨텍스트 로딩 실패로 바로 종료됨.
+이 경우 콘솔 로그에 오류 메시지 없이 그냥 “종료 코드 0”만 뜰 수도 있습니다.
+
+🔧 확인 방법:
+실행 콘솔에서 빨간 줄이 있는지 확인
+예외 메시지가 뜨는지 확인
+로그 출력이 없다면, logging.level.root=DEBUG를 추가해서 더 자세히 로그 보이게 할 수 있습니다.
+
+4. 의존성 누락 또는 잘못된 조합
+예를 들어, spring-boot-starter-web이 빠지면 톰캣이 내장되지 않아 웹 앱이 실행되지 않습니다.
+🔧 해결 방법: build.gradle 또는 pom.xml에 아래 의존성이 있는지 확인:
+Gradle
+groovy
+implementation 'org.springframework.boot:spring-boot-starter-web'
+Maven
+
+xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+5. 실행 구성이 잘못되었거나, 스프링 부트 앱이 아닌 클래스를 실행
+확인: 인텔리제이에서 어떤 클래스가 실행되고 있는지 확인하세요.
+오른쪽 상단 실행 구성이 MyApp.main()인지,
+혹은 단순 테스트 클래스나 빈 Java 클래스가 실행되고 있는지 확인해야 합니다.
+
+✅ 요약 체크리스트
+체크 항목	확인 방법
+@SpringBootApplication 존재 여부	main 클래스 상단
+SpringApplication.run(...) 존재 여부	main 메서드 내부
+spring-boot-starter-web 포함 여부	build.gradle 또는 pom.xml
+application.properties에서 spring.main.web-application-type=none 여부	설정 파일 확인
+예외 발생 여부	콘솔 로그 확인
+실행 클래스 확인	인텔리제이 실행 구성 확인
+
+
+🔍 점검 포인트:
+application-secret.yml에 DB 접속 정보(spring.datasource.*)가 있는가?
+DB가 실제 실행되고 있는가?
+DB 테이블 구조와 엔티티가 일치하는가?
+
+✅ 진단을 위한 추가 조치
+▶ 1. 콘솔 로그 전부 보기
+콘솔 로그 처음부터 끝까지 자세히 보세요.
+빨간색 에러가 없더라도 중간에 Context closed, No embedded servlet container, Flyway exception 같은 로그가 나올 수 있습니다.
+
+▶ 2. application.yml에 로그 더 보기 설정
+yaml
+logging:
+  level:
+    root: DEBUG
+
+▶ 3. 임시로 application.yml에서 Flyway나 secret import 제거
+yaml
+spring:
+  config:
+    # import: optional:application-secret.yml ← 주석 처리
+또는 Flyway도 잠깐 꺼보세요:
+
+yaml
+  flyway:
+    enabled: false
+
+🛠️ 최종 제안
+👉 해결을 위한 최소 설정으로 main() 클래스 확인:
+java
+package com;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(DemoApplication.class, args);
+  }
+}
+
+👉 application.yml 최소화해서 테스트
+yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/yourdb
+    username: root
+    password: yourpw
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+필요하다면:
+main() 클래스 코드
+application-secret.yml 유무
+
+그런데도 여전히 "종료 코드 0"으로 종료된다면, 이제 거의 확실하게 애플리케이션이 자동 종료되는 환경적 원인이나 초기화 단계에서 중단되는 예외 상황이라고 볼 수 있습니다.
+
+✅ 지금 상황 요약
+항목	상태
+@SpringBootApplication	✅ 있음
+main()에서 SpringApplication.run() 호출	✅ 있음
+spring-boot-starter-web 의존성	✅ 있음
+DB 설정	✅ 있음 (application-secret.yml에 있음)
+application.yml에서 import 처리	✅ 있음 (optional:application-secret.yml)
+톰캣 실행 안 되고 바로 "종료 코드 0"	❗ 이상함
+
+🧪 추가 진단 5단계
+1. ✅ 콘솔 로그 출력 확인
+앱을 실행했을 때 콘솔에 다음이 나오는지 확인해보세요:
+
+Tomcat started on port(s): 8080 (http)
+Started OurhourApplication in 2.345 seconds (JVM running for 2.456)
+이게 없고, 바로 "BUILD SUCCESSFUL / 종료 코드 0"만 뜬다면 → 앱이 초기화 도중 종료된 것입니다.
+
+2. ✅ validate → update로 바꿔보기
+application.yml의 JPA 설정이 다음처럼 되어 있죠:
+
+yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+validate는 엔티티와 DB 테이블 구조가 100% 일치해야 실행됩니다.
+
+🔧 바꿔서 테스트:
+yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+이걸로 바꾸고 다시 실행해보세요.
+실행이 잘 되면 → validate 상태에서 테이블 불일치로 종료된 것!
+
+3. ✅ flyway.enabled: false 로 꺼보고 테스트
+Flyway도 자동 실행되도록 설정되어 있는데, 마이그레이션 스크립트 문제로 인해 앱이 종료될 수도 있습니다.
+
+yaml
+spring:
+  flyway:
+    enabled: false
+이렇게 바꾸고 실행해보세요.
+
+4. ✅ 로그 레벨 강제 DEBUG로
+application.yml의 로그 설정을 다음처럼 수정해 보세요:
+
+yaml
+logging:
+  level:
+    root: DEBUG
+Started OurhourApplication 메시지가 뜨는지 확인
+Context closed 같은 메시지가 있으면 거기서 멈춘 이유가 로그에 나옵니다
+
+5. ✅ 다른 문제: 테스트 실행되고 바로 종료?
+혹시 Spring Boot 앱을 실행한 게 아니라, 테스트 코드가 실행되고 종료된 것은 아닌가요?
+인텔리제이 오른쪽 상단 실행 환경이 이처럼 되어 있다면 문제입니다:
+
+css
+[✔] OurhourApplicationTests
+👉 반드시 OurhourApplication을 실행해야 합니다.
+
+📌 요약 정리 (순서대로 해보세요)
+application.yml → ddl-auto: update 로 변경
+flyway.enabled: false 로 꺼보기
+로그 레벨을 root: DEBUG로 높이기
+인텔리제이에서 실행 대상이 OurhourApplication인지 재확인
+
+
+==================================================
+인텔리제이에서 종료 코드 1로 완료된 프로세스라고 뜨는건 왜임? 
+
+ChatGPT의 말:
+인텔리제이(IntelliJ)에서 **"종료 코드 1(Process finished with exit code 1)"**이 표시되는 이유는, 실행한 프로그램이 비정상적으로 종료되었다는 뜻입니다. 종료 코드 0은 정상 종료, 1은 오류가 발생한 경우를 의미합니다.
+
+🔍 종료 코드 1의 주요 원인
+다음과 같은 이유로 발생할 수 있습니다:
+
+원인	설명
+main() 메서드 오류	main() 메서드가 없거나 잘못 작성되었을 경우
+예외가 발생했는데 처리 안됨	예외(Exception)가 발생하고 try-catch로 처리되지 않음
+환경 설정 문제	DB 연결 정보 오류, 포트 충돌, 잘못된 경로 등
+Gradle/Maven 문제	의존성 충돌, 컴파일 오류 등
+SpringBoot 애플리케이션 실패	@SpringBootApplication 내부 설정 오류, Bean 생성 실패 등
+
+🧪 확인 방법
+콘솔 로그 확인: 콘솔 출력에 에러 메시지가 뜨는 경우가 대부분입니다. 어떤 클래스, 라인에서 에러가 났는지 로그에 나와요.
+Exception 메시지 읽기: NullPointerException, ClassNotFoundException, ApplicationContext 관련 예외가 있는지 확인.
+Application 설정 확인:
+application.yml / properties
+데이터베이스 URL, 사용자 정보
+Build 구성 확인:
+Gradle/Maven 빌드 정상 여부
+실행 구성이 잘 되어 있는지 (Edit Configurations)
+
+💡 예시
+예를 들어 다음처럼 DB 설정이 잘못되면 Spring Boot는 실행 중에 오류를 발생시키고 exit code 1로 종료됩니다:
+
+yml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/wrong_db  ❌
+이때 콘솔에는 다음과 같은 로그가 나올 수 있습니다:
+
+pgsql
+Caused by: java.sql.SQLException: Access denied for user 'root'@'localhost'
+
+✅ 해결 방법 요약
+콘솔의 에러 로그를 정확히 읽어보세요.
+예외 처리가 잘 되어 있는지, 설정 파일에 오타가 없는지 확인하세요.
+실행 전에 Build가 성공했는지도 중요합니다.
+
+
+
+
+
 
