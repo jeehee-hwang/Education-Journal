@@ -1,1 +1,94 @@
+- 프로젝트 게시판 기능 완성 
+- postman으로 url 연결 확인 
+
+** BoardResponseDTO
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+public class BoardResponseDTO {
+
+    private Long boardId;
+    private String name;
+
+}
+
+======================================================
+** Controller
+
+@RestController
+@RequestMapping("/api/organizations")
+@RequiredArgsConstructor
+public class BoardController {
+
+    private final BoardService boardService;
+
+    //@OrgAuth
+    //게시판 전체 목록 조회
+    @GetMapping("/{orgId}/boards")
+    public ResponseEntity<ApiResponse<List<BoardResponseDTO>>> getBoardList(@OrgId @PathVariable Long orgId) {
+
+        List<BoardResponseDTO> boardResponseDTOList = boardService.getBoardList(orgId);
+
+        ApiResponse<List<BoardResponseDTO>> apiResponse = ApiResponse.success(boardResponseDTOList);
+
+        return ResponseEntity.ok(apiResponse);
+
+    }
+
+    // 게시판 등록
+    @PostMapping("/{orgId}/boards" )
+    public ResponseEntity<ApiResponse<BoardResponseDTO>> createBoard(@OrgId @PathVariable Long orgId, @RequestBody BoardDTO create) {
+
+        BoardResponseDTO newBoard = boardService.createBoard(orgId, create);
+        return ResponseEntity.ok(ApiResponse.success(newBoard));
+    }
+
+   //게시판 수정
+    @PutMapping("/{orgId}/boards/{boardId}")
+    public ResponseEntity<ApiResponse<BoardResponseDTO>> modifyBoard(@OrgId @PathVariable Long orgId, @PathVariable Long boardId, @RequestBody BoardDTO modify) {
+        BoardResponseDTO boardResponseDTO = boardService.modifyBoard(boardId, modify);
+        return ResponseEntity.ok(ApiResponse.success(boardResponseDTO));
+    }
+
+  // 게시판 삭제
+    @DeleteMapping("/{orgId}/boards/{boardId}")
+    public ResponseEntity<ApiResponse<Void>> deleteBoard(@OrgId @PathVariable Long orgId, @PathVariable Long boardId) {
+
+        boardService.deleteBoard(boardId);
+
+        return ResponseEntity.ok(ApiResponse.success(null));
+
+    }
+}
+
+======================================================
+** Exception
+public class BoardException extends BusinessException {
+    public BoardException(int status, String message) {
+        super(status, message);
+    }
+
+    public static BoardException authorNotFoundException() {
+        return new BoardException(404, "해당 작성자를 찾을 수 없습니다.");
+    }
+}
+
+======================================================
+** Mapper
+@Mapper(componentModel = "spring")
+public interface BoardMapper {
+
+    // Entity -> DTO
+    BoardResponseDTO toBoardResponseDTO(BoardEntity boardEntity);
+}
+
+======================================================
+** Repository
+@Repository
+public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
+    List<BoardEntity> findAllByOrgEntity_OrgId(Long orgId);
+}
+
+
 
