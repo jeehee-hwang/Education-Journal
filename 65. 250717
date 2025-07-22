@@ -1,1 +1,68 @@
+- 프로젝트 
 
+============================================
+인텔리제이에서는 돌아가는데 postman에서는 서버 내부 오류라고 하는걸까?
+
+IntelliJ에서 서버가 실행되는 것과 Postman으로 API를 호출했을 때 오류가 발생하는 것은 다른 문제입니다.
+서버가 IntelliJ에서 성공적으로 실행되었다는 것은 코드가 컴파일되고 Spring 애플리케이션이 시작되었다는 의미일 뿐입니다. 
+Postman에서 "서버 내부 오류(500 Internal Server Error)"가 발생하는 것은, 서버가 시작된 후 실제 HTTP 요청을 처리하는 과정에서 예기치 않은 런타임 에러가 발생했다는 뜻입니다.
+가장 가능성이 높은 원인은 요청 데이터 또는 그와 관련된 로직 처리 중 발생하는 NullPointerException 입니다.
+
+## 주요 원인 분석
+Postman으로 특정 API를 호출할 때만 발생하는 오류의 일반적인 원인은 다음과 같습니다.
+
+1. NullPointerException (NPE) 💡
+
+가장 흔한 원인입니다. 요청 데이터를 처리하는 과정에서 객체가 null인데, 해당 객체의 메소드를 호출하려고 할 때 발생합니다.
+
+예시 1: modifyBoard나 deleteBoard API를 호출할 때, 존재하지 않는 boardId를 전달하는 경우. 
+이전에 수정한 코드에서는 orElseThrow로 예외 처리를 했지만, 만약 이 처리가 없다면 findById()가 반환한 Optional 객체에 .get()을 호출할 때 에러가 발생합니다.
+
+예시 2: createBoard 시 Body에 name 필드를 빼먹고 보내면, create.getName()이 null을 반환하여 이후 로직에서 NPE가 발생할 수 있습니다.
+
+2. 잘못된 요청 데이터 (Request Data)
+
+Postman에서 보낸 데이터의 형식이 잘못되었을 수 있습니다.
+JSON 형식 오류: JSON 문법이 틀렸거나(쉼표 등), Body에 아무것도 보내지 않았을 경우.
+데이터 타입 불일치: BoardDTO의 isFixed는 boolean인데, Postman에서 "isFixed": "trueeee" 와 같이 문자열로 보내는 경우.
+경로 변수(@PathVariable) 누락 또는 오류: /api/organizations/{orgId}/boards를 호출해야 하는데, {orgId} 자리에 값을 넣지 않거나 잘못된 값을 넣는 경우.
+
+3. 데이터베이스 제약 조건 위배
+
+데이터베이스에 데이터를 저장하거나 수정할 때 발생하는 문제입니다.
+외래 키(Foreign Key) 제약 조건: 가장 가능성 높은 시나리오입니다. createBoard를 호출할 때 URL에 포함된 {orgId} 값(예: /api/organizations/99/boards에서 99)이 실제 데이터베이스의 org_entity 테이블에 존재하지 않는 경우, boardRepository.save() 시점에서 데이터베이스가 외래 키 제약 조건 위배 오류를 발생시킵니다.
+Not Null 제약 조건: 엔티티의 nullable = false 필드에 null 값을 저장하려고 할 때 발생합니다.
+
+## 해결을 위한 단계별 확인 사항
+아래 단계를 순서대로 따라가며 문제를 찾아 해결해 보세요.
+
+1. 서버 로그 확인 (가장 중요) 🔍
+
+IntelliJ의 실행(Run) 창에 출력되는 에러 로그를 반드시 확인해야 합니다. 500 에러가 발생했다면 거의 100% 에러 로그와 스택 트레이스(stack trace)가 출력됩니다.
+java.lang.NullPointerException: 어떤 객체가 null인지 확인합니다.
+DataIntegrityViolationException: 데이터베이스 제약 조건 위배 오류입니다. 외래 키나 고유 키(unique key) 문제일 가능성이 높습니다.
+HttpMessageNotReadableException: Postman에서 보낸 JSON을 DTO 객체로 변환하지 못했다는 의미입니다. JSON 문법 오류나 데이터 타입 불일치를 확인해야 합니다.
+
+2. Postman 요청 정보 재확인 ✅
+
+Postman에서 보내는 요청이 올바른지 다시 한번 확인합니다.
+HTTP 메소드: POST, PUT, GET, DELETE가 올바른지 확인합니다.
+URL: http://localhost:8080/api/organizations/1/boards 와 같이 {orgId}, {boardId}가 실제 DB에 존재하는 값으로 잘 채워져 있는지 확인합니다.
+Headers: Content-Type이 application/json으로 설정되어 있는지 확인합니다.
+Body: JSON 형식이 올바른지, 필요한 모든 필드가 포함되어 있는지 확인합니다.
+
+올바른 POST 요청 Body 예시:
+JSON
+
+{
+    "name": "새로운 공지사항 게시판",
+    "isFixed": true
+}
+
+3. 디버깅 모드 활용 🐞
+
+IntelliJ의 디버깅 기능을 사용하는 것이 가장 확실한 방법입니다.
+에러가 발생하는 Controller 메소드 첫 줄에 **브레이크포인트(Breakpoint)**를 찍습니다. (코드 라인 왼쪽 여백 클릭)
+IntelliJ 우측 상단의 벌레 모양 아이콘을 눌러 디버그 모드로 서버를 실행합니다.
+Postman으로 동일한 요청을 보냅니다.
+코드가 브레이크포인트에서 멈추면, F8 키를 눌러 한 줄씩 코드를 실행하면서 변수에 어떤 값이 들어오는지, 언제 null이 되는지, 어느 부분에서 에러가 발생하는지 직접 확인할 수 있습니다.
