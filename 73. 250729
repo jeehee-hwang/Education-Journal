@@ -1,0 +1,262 @@
+- 파이썬, LLM을 위한 
+- 파이썬 음... 어렵네 
+- 띄어쓰기, 쉼표 등으로도 오류가 나서 잘 살펴봐야 한다. 
+
+
+
+오늘 수업 내용 전체 
+==========================
+
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=api_key)
+
+response = client.chat.completions.create(
+    model = "gpt-3.5-turbo",
+    messages=[
+        {"role" : "user", "content": "파이썬 sdk에 대해 50자 이내로 설명해줘" }
+    ],
+    temperature=1.0
+)
+
+sdk_answer = response.choices[0].message.content
+print("SDK를 이용한 LLM DML의 답변 ")
+print(sdk_answer)
+
+==========================
+
+# 1. 기본 함수와 type hint 
+def create_greeting(name: str, age: int = 20) ->str:
+    return f"안녕하세요, {age}세 {name}님"
+
+# 2. 함수 호출
+print(create_greeting("홍길동", 30))    # 위치 인자 
+print(create_greeting(age=45, name='신사임당')) # 키워드 인자는 순서가 바뀌어도 된다
+print(create_greeting("유관순")) #기본값 활용, age를 생략했으니 기본값이 사용됨 
+
+# 3. 가변 인자(*args)와 키워드 가변 인자 (*kwargs )
+def call_llm_api(prompt: str, *args, **kwargs ):
+    print(f"전송할 프롬포트: '{prompt}")
+    if args:
+        print(f"부가 옵션(tuple): {args}")
+    if kwargs:
+        print(f"상세 설정(dict): {kwargs}")    
+
+call_llm_api(
+    "오늘의 주요 뉴스 요약해줘",
+    "3줄 요약",                         # -> args에 들어감 
+    model="gpt-4o",               # -> kwargs 들어감
+    temperature=0.7              # -> kwargs 들어감
+)
+
+==========================
+
+import json
+
+stuctured_data = [
+    {
+        "id": 1, 
+        "category": "python",
+        "question": "파이썬의 장점은?",
+        "answer": "간결한 문법, 강력한 라이브러리 생태계",
+        "tags":  ["python", "programming", "strength"]
+    },
+    {
+        "id": 2, 
+        "category": "python",
+        "question": "리스트와 튜플의 차이는?",
+        "answer": "리스트 가변, 튜플은 불변",
+        "tags": ["list", "tuple", "data_structure"]
+    }
+]
+
+output_filename = 'structured_data.json'
+
+# 1. 파이썬 객체를 json 파일로 저장하기 
+print(f" '{output_filename}' 파일로 데이터를 저장합니다. " )
+try:
+    # 파일을 'w'(쓰기) 모드로 엽니다. with 구문은 파일을 안전하게 열고 자동으로 닫아준다. 
+    # encoding='utf-8' 한글 처리를 위한 필수 옵션
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        #json.dump(data, file) : 파이썬 객체(리스트, 딕셔너리)를 json 파일에 쓴다. 
+        json.dump(stuctured_data, f, indent=2, ensure_ascii=False)
+    
+    print("파일 저장이 완료 되었습니다.")
+
+except Exception as e:
+    print(f"파일 저장 중 오류 발생: {e}")
+
+# 2. json 파일을 다시 파이썬 객체로 불러오기 
+print(f"\n '{output_filename} 파일을 다시 읽어옵니다.' ")
+try:
+    # 파일을 'r'(읽기) 모드로 연다
+    with open(output_filename, 'r', encoding='utf-8') as f:
+        #json.load()는 파일 객체를 받아, json 문자열을 파싱하여 파이썬 객체로 변환 
+        loaded_data = json.load(f)
+
+    print("파일 읽기 성공")
+    print("불러온 데이터의 타입:", type(loaded_data))
+    print(loaded_data[0]['question'])
+    print(loaded_data[1]['tags'])
+
+except FileNotFoundError:
+    print(f"{output_filename} 파일을 찾을 수 없습니다.")
+except json.JSONDecodeError:
+    print(f"{output_filename} 파일이 올바른 json 형식이 아닙니다.")
+except Exception as e:
+    print(f"파일 읽기 중 오류 발생: {e}")
+
+# 3. json 문자열과 파이썬 객체 변환 
+# 파일이 아니라, 변수 안에 들어있는 json 형태의 문자열을 다룰때는 's'가 붙은 함수를 사용한다. 
+
+# 파이썬 딕셔너리 -> json 문자열로 반환 
+my_dict = {'name' : '슈퍼맨', 'power' : 100 }
+json_string = json.dumps(my_dict, indent=2, ensure_ascii=False)
+print(json_string)
+print(type(json_string))
+
+#json 문자열 -> 파이썬 딕셔너리로 변환 
+retrieved_string = '{"id" : "user1", "isActive":"ture"}'
+retruevde_dict = json.loads(retrieved_string)
+print(retruevde_dict)
+print(type(retruevde_dict))
+print("사용자 활성 상태:", retruevde_dict['isActive'])
+
+=====================================================
+qa_data.txt 파일을 만듬 
+
+Q: 파이썬의 장점은?
+A: 간결한 문법과 강력한 라이브러리 생태계입니다. 
+===
+Q: 리스트와 튜플의 차이는?
+A: 리스트는 가면하고 튜플은 불변합니다. 
+===
+Q:
+A: 이 데이터는 질문의 비어있어 처리하면 안됩니다.
+===
+Q: f-string이란?
+A: 파이썬 3.6부터 도입된 편리한 문자열 포맷팅 방법입니다. 
+
+====
+def parse_qa_data_to_list(file_path: str) -> list[dict]:
+    """ 텍스트 파일을 읽어와서, Q&A 딕셔너리들의 리스트로 변환 하는 함수입니다. """
+    qa_list = []
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        blocks = content.strip().split('===')
+
+        for block in blocks:
+            if not block.strip() : continue
+            lines = block.strip().strip('\n')
+            if len(lines) >=2:
+                question = lines[0].replace('Q:', '').strip()
+                answer = lines[1].replace('A:', ' ').strip()
+                if question and answer:
+                    qa_list.append({"question": question, "answer": answer})
+    except FileNotFoundError:
+        print("파일을 찾을 수 없습니다.")
+    except Exception as e:
+        print("처리 중 오류 발생: {e}")
+    return qa_list
+    
+====
+
+from my_parser import parse_qa_data_to_list
+import os
+import json
+
+def run_pipline():
+    """전체 데이터 처리 파이프라인을 실행하는 메인 함수"""
+    print("텍스트를 json으로 변환하는 파이프라인 시작")
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    input_file_path = os.path.join(base_dir, 'data', 'qa_data.txt')
+    output_file_path = os.path.join(base_dir, 'qna_for_llm.json')
+
+    qa_data = parse_qa_data_to_list(input_file_path)
+
+    if qa_data:
+        try:
+            print(f"{output_file_path}으로 데이터를 저장합니다")
+            with open(output_file_path, 'w', encoding='utf-8') as f:
+                json.dump(qa_data, f, indent=2, ensure_ascii=False) 
+            print(f"데이터가 성공적으로 저장되었습니다.")
+        except Exception as e:
+            print(f"파일 저장 중 오류 발생 {e}")
+    else:
+        print("처리할 유효한 데이터가 없습니다. ")
+
+# main.py 파일이 직접 실행되었을 때만 if 블록 안의 코드를 실행하라 
+if __name__ == '__main__':
+    run_pipline()
+
+===================================================
+
+data\products.csv
+product_id,product_name, price,description
+101,새우깡,1500,"손이 가는 짭짤한 맛"
+102,감자깡,1600,"담백한 감자의 풍미"
+103,고구마깡,1600,"달콤 바삭한 맛"
+
+===
+
+import pandas as pd
+import json 
+
+def convert_csv_to_json(csv_path: str, jsonl_path: str):
+    try:
+        #pandas를 사용하여 csv 파일을 dataframe 객체로 읽어온다 
+        #dataframe은 파이썬에서 사용하는 2차원 테이블(표) 형태의 데이터 구조이다. 
+        df = pd.read_csv(csv_path, encoding='utf-8')
+
+        #dataframe을 딕셔너리들의 리스트로 변환한다. 
+        records = df.to_dict('records')
+
+        with open(jsonl_path, 'w', encoding='utf-8') as f: 
+            for record in records:
+                json_string = json.dumps(record, ensure_ascii=False)
+
+                f.write(json_string + '\n')
+
+            return True
+
+    except FileNotFoundError:
+        print(f"파일을 찾을 수 없습니다.")
+        return False
+    except Exception as e:
+        print(f"파일 변환 중 문제가 발생 했습니다 {e}")
+        return False
+        
+===
+
+import os
+from my_parser import convert_csv_to_json 
+
+def  run_pipeline():
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    input_csv_path = os.path.join(base_dir, 'data', 'products.csv')
+
+    output_jsonl_path = os.path.join(base_dir, 'products.jsonl')
+
+        #데이터 변환 실행 
+    is_success = convert_csv_to_json(input_csv_path, output_jsonl_path)
+
+    if is_success:
+        print("작업이 성공적으로 완료 되었습니다.")
+    else:
+        print("작업에 실패 했습니다. ")
+
+if __name__ == "__main__":
+    run_pipeline()
+    
+
