@@ -1,0 +1,568 @@
+- LLM 
+VScode에서 작성, 마크다운 사용 
+.env 파일의 위치가 중요 
+
+ 미니콘다(Miniconda) 베이스 확인 및 위치 변경 (터미널)
+ - 1단계: 현재 환경 목록 확인하기 
+conda env list
+- 2단계: 새 환경 생성하기 (만약 없다면)
+conda create --name llm_project python=3.10
+3단계: 원하는 환경으로 전환 (활성화)
+conda activate llm_project
+
+요약:
+conda create --name my_env python=3.10: 새 환경 만들기
+conda activate my_env: 만든 환경으로 전환하기
+conda deactivate: 다시 base 환경으로 돌아가기
+
+
+** LLM - VScode **
+
+## Prompting Engineering w/ chatgpt
+## 환경설정 
+=================================
+%pip install openai
+=================================
+# OPEN_API_KEY 설정
+import os
+from dotenv import load_dotenv
+
+load_dotenv() #현재경로의 .env 파일을 읽어 시스템 환경변수로 등록
+
+OPENAI_API_KEY = os.getenv('OPEN_API_KEY')
+=================================
+
+## chat completion 
+
+from openai import OpenAI
+
+client = OpenAI( api_key=OPENAI_API_KEY )
+
+response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[
+        {
+            "role":"system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "당신은 친절한 챗봇입니다."
+
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "더운날 점심으로는 뭘 먹으면 좋을까요?"
+                }
+            ]
+        }
+    ],
+    response_format={
+        "type": "text"
+    },
+    temperature=1.0
+
+)
+print(response.choices[0].message.content)
+
+--------------------
+결과 
+더운 날에는 가볍고 시원한 음식이 특히 좋죠! 다음과 같은 메뉴를 추천드릴게요.
+
+1. 냉면  
+차가운 국물 또는 비빔냉면은 더운 날 입맛을 돋워줘요.
+
+2. 콩국수  
+고소하고 시원한 콩국수도 여름 점심으로 인기 많아요.
+
+3. 샐러드  
+닭가슴살, 다양한 채소, 과일 등을 넣은 샐러드도 가볍고 상쾌하게 먹을 수 있어요.
+
+4. 초밥/회덮밥  
+생선회가 들어간 음식은 입안이 개운해서 여름에 잘 어울려요.
+
+5. 김밥이나 유부초밥  
+간단하고 부담 없이 즐길 수 있습니다.  
+
+6. 토마토 달걀국, 오이냉국  
+뜨겁지 않고 시원하게 먹을 수 있는 국도 좋아요.
+
+마실 거로는 시원한 보리차나 아이스티, 식혜도 잘 어울려요!  
+마음에 드는 메뉴 있으신가요? 더 추천해드릴 수도 있어요 :)
+
+==========================================
+
+## 패턴1 : 페르소나 &
+
+from openai import OpenAI
+
+def correct_title(query, temperature=0.3):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    sysetm_instruction = """
+    기사들이 송고한 제목을 교정해주세요. 
+
+    ### 지시사항 ###
+    - 기사의 제목이 명확하고 주제와 잘 맞도록 수정해주세요
+    - 독자의 관심을 끌수 있도록 간결하고 임팩트있는 표현을 사용해주세요
+    - 비속어, 은어등은 제거하고, 의미가 유지되도록 제목을 교정해주세요
+
+    ### 출력 형식 ###
+    - 원래 제목: [기사의 원래 제목]
+    - 교정 제목: [기사의 교정된 제목]
+
+    ### 예시 ###
+    - 원래 제목: "어제 서울에서 큰불이 나서 수백명이 대피했다."
+    - 수정 제목: "서울 대형화재, 수백명 대피"
+    """
+
+    user_message = f"""
+    다음 제목을 교정해주세요.
+    제목 : {query}
+    """
+        
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role":"system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": sysetm_instruction
+
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user_message
+                    }
+                ]
+            }
+        ],
+        response_format={
+            "type": "text"
+        },
+        temperature=temperature,
+        max_tokens=2048,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+    return response.choices[0].message.content
+
+print(correct_title('은지의 FM 개꿀 라디오 방송에 주목해주세요~~'))
+print(correct_title('졸라 빠른 작업으로 온열질환에 걸리는 이 시대의 노동자의 애환'))
+----------------
+결과 
+- 원래 제목: 은지의 FM 개꿀 라디오 방송에 주목해주세요~~  
+- 교정 제목: 은지의 FM 라디오 방송, 청취자 주목
+- 원래 제목: 졸라 빠른 작업으로 온열질환에 걸리는 이 시대의 노동자의 애환
+- 교정 제목: 과도한 작업 속도, 온열질환에 시달리는 노동자들
+
+======================================
+
+## 구조화된 출력 (영단어장 생성)
+------
+from openai import OpenAI
+import json
+
+def extract_eng_words(query, temperature=0.5): 
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    sysetm_instruction="""
+    당신은 영어팝송을 이용해 흥미롭고 이해하기 쉬운 방식으로 영어를 가르치는 선생님입니다.  
+    
+    #처리단계 
+    1. 주어진 가사에서 사용되는 영어단어 3개를 랜덤하게 추출해주세요.
+    2. 각 단어의 의미를 한글로 알려주세요. 
+    3. 각 단어별로 유사한 단어도 함께 소개해주세요. 
+    4. 유사한 단어별 예시문장도 작성해주세요.  
+
+
+    # 출력형식
+    - 출력형식은 json 형식입니다. 
+
+    #출력예시
+    - {
+            "json_list" : [
+            {
+                "단어" : "apple" 
+                "의미": "사과"
+                "유사어": [
+                    {
+                    "유사단어": "banana"
+                    "예시문장": ["I like banana", "l eat banana"]
+                    }
+
+                ]
+            }
+        ] 
+    }
+    """
+
+    user_message = f"""
+    노래가사: {query}    
+    """
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role":"system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": sysetm_instruction
+
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user_message
+                    }
+                ]
+            }
+        ],
+        response_format={
+            "type": "json_object"
+        },
+        temperature=temperature,
+        max_tokens=2048,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+
+    return json.loads(response.choices[0].message.content)
+
+lyrics = """
+Nice to meet you, where you been?
+I could show you incredible things
+Magic, madness, heaven, sin
+Saw you there and I thought
+Oh my God, look at that face
+You look like my next mistake
+Love's a game, wanna play? Ayy
+New money, suit and tie
+I can read you like a magazine
+Ain't it funny, rumors fly
+And I know you heard about me
+So hey, let's be friends
+I'm dyin' to see how this one ends
+Grab your passport and my hand
+I can make the bad guys good for a weekend
+"""
+
+result = extract_eng_words(lyrics)
+words = result['json_list']
+
+for word_dict in words:
+    print(f'단어: {word_dict["단어"]}')
+    print(f'의미: {word_dict["의미"]}')
+
+    for sim_word_obj in word_dict['유사어']:
+        print(f'유사어:{sim_word_obj['유사단어']}')
+
+        for sentence in sim_word_obj['예시문장']: 
+            print(f'예제: {sentence}')
+
+    print('------------------------------------')
+----------------
+
+결과 
+단어: passport
+의미: 여권
+유사어:ID card
+예제: You need your ID card to enter the building.
+예제: She showed her ID card at the airport.
+유사어:visa
+예제: He applied for a student visa.
+예제: You need a visa to travel to that country.
+------------------------------------
+단어: rumors
+의미: 소문들
+유사어:gossip
+예제: She loves to hear gossip about celebrities.
+예제: Don't spread gossip at school.
+유사어:hearsay
+예제: It's just hearsay, so don't believe it.
+예제: The news was based on hearsay.
+------------------------------------
+단어: madness
+의미: 광기, 미친 행동
+유사어:insanity
+예제: The movie was full of insanity.
+예제: He was driven to insanity by stress.
+유사어:craziness
+예제: All this craziness makes me tired.
+예제: The party was pure craziness.
+------------------------------------
+
+====================================
+
+## 생각의 사슬 (냉털 마스터 - ReAct)
+- Reason + Act 기법으로 현재 상황에 대한 통찰이후, 다음 행동에 대한 작성을 유도한 기법이다. 
+
+from openai import OpenAI
+import json
+
+def finish_my_refregator(query, temperature=1.2):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    system_instruction = """
+    너는 냉장고에 있는 재료를 활용해 창의적이고, 실용적인 저녁식사 아이디어를 제안하는 요리 전문가이다. 
+    네 역할은 사용자로부터 제공받은 재료목록을 분석하고, 이를 활용할 수 있는 요리 아이디어를 구상해서, 
+    조리방법을 단계별로 상세히 설명하는 것이다. 
+
+    # 출력예시 
+    1. 상황분석(Reason)
+    - 현재 가진 재료는 [사용자가 입력한 재료]입니다. 
+    - 주재료인 닭고기와 다양한 채소들이 있습니다. 
+    - 이 재료들은 스튜, 볶음, 찜요리에 적합니다. 
+
+    2. 행동계획(Reason/plan)
+    - 가장 쉽게 만들수 있는 요리로 닭고기 스튜를 제안합니다. 
+    - 각 요리에 필요한 재료와 조리도구를 확인합니다. 
+    - 부족한 재료가 있다면, 대체 가능한 옵션을 제시합니다. 
+    - 조리 과정을 단계별로 상세히 설명합니다. 
+    - 맛을 더 향샹시키기 위한  꿀팁과 주의사항 또한 제공합니다. 
+
+    3. 실행(Act)
+    - 여기에 상세레시피를 단계별로 작성합니다. 
+    """
+
+    user_message=f"""
+    사용자의 냉장고에는 현재 {query}가 있습니다. 
+    """
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role":"system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_instruction
+
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user_message
+                    }
+                ]
+            }
+        ],
+        response_format={
+            "type": "text"
+        },
+        temperature=temperature, #대답 창의성 0-2, 기본값 1 
+        max_tokens=2048, # 응답 최대 토큰수
+        top_p=1, # 사용할 상위누적확률
+        frequency_penalty=0, # 토큰 사용 빈도수에 대한 패널티
+        presence_penalty=0 # 토큰 재사용데 대한 패널티
+    )
+
+    return response.choices[0].message.content
+
+print(finish_my_refregator("버섯, 깻잎, 소고기,크림, 파스타"))
+
+---------------------
+결과 
+1. 상황분석(Reason)  
+- 현재 가진 재료는 버섯, 깻잎, 소고기, 크림, 파스타입니다.  
+- 소고기는 단백질 공급원이 되며, 버섯은 향과 식감을 보충해줍니다.  
+- 크림과 파스타는 크림 파스타류의 주요 재료입니다.  
+- 깻잎은 이탈리아식 요리에 한식풍의 풍미와 색다름을 더해줍니다.  
+- 이 재료들은 크림 파스타, 소고기 볶음면 등 다양한 요리에 적합합니다.  
+
+2. 행동계획(Reason/plan)  
+- 가장 쉽게 그리고 맛있게 즐길 수 있는 ‘소고기&버섯 깻잎크림파스타’를 제안합니다.  
+- [필요도구] 프라이팬 혹은 냄비, 끓는 물, 칼, 도마, 집게.  
+- [재료 체크] 해당 재료들만 사용해도 기본 맛을 낼 수 있습니다.  
+- [대체제] 올리브오일이나 마늘이 있다면 풍미가 더 좋아집니다(필수 X).  
+- 단계별 과정을 쉽고 상세하게 설명하고, 풍미 업 노하우와 주의사항을 안내합니다.  
+    
+3. 실행(Act)  
+
+**소고기&버섯 깻잎 크림파스타 레시피**  
+
+1) 준비하기  
+- 모든 재료를 손질합니다.  
+  소고기는 얇게(불고기 감이면 먹기 좋게 한 입 크기로) 썹니다.  
+  버섯은 먹기 좋은 크기로 자릅니다. 깻잎은 깨끗이 씻어서 채 썰어줍니다.  
+- 파스타 면은 패키지의 조리법대로 끓는 소금물에 삶습니다(알덴테보다 약간 덜 익도록 1분 적게).  
+
+2) 소고기&버섯 볶기  
+...
+- 소고기는 너무 오래 익히면 질겨지니 색이 변할 때까지만 빠르게 볶으세요.  
+      
+버섯·소고기·크림이 어우러진 부드러운 파스타, 깻잎의 신선한 향이 더해져 집에서도 색다르고 고급스러운 크림 파스타 즐길 수 있습니다!  
+맛있게 드세요!
+
+=========================================
+
+## 역할극 & 실전 적용 (면접 질문 생성)
+
+from openai import OpenAI
+import json
+
+def job_interview(job_posting, temperature=0.5):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    system_instruction = """
+    당신은 풀스택개발 분야의 전문가이면서, 해당 분야의 면접 전문가입니다. 
+    사용자가 제공한 구인공고에 근거해서 핵심적인 질문들로 지원자를 평가할 수 있어야 합니다.     
+    """
+
+    user_message = f"""
+    아래 채용공고의 직무에 대해 예상면접 질문과 모범답안을 작성해주세요. 
+
+    -- 가이드 -- 
+    하드스킬과 소프트스킬 2개의 섹션으로 나눠 작성해 주세요.
+    각 섹션별로 3개의 질문과 답변을 준비해주세요
+
+    -- 출력형식 -- 
+    # 1. 하드스킬
+    질문 1)
+    답변 1)    
+
+    질문 2)
+    답변 2)    
+
+    질문 3)
+    답변 3)    
+
+    # 2. 소프트스킬
+    질문 1)
+    답변 1)    
+
+    질문 2)
+    답변 2)    
+
+    질문 3)
+    답변 3)    
+
+    -- 채용공고 -- 
+    {job_posting}
+
+    """
+    
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role":"system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_instruction
+
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user_message
+                    }
+                ]
+            }
+        ],
+        response_format={
+            "type": "text"
+        },
+        temperature=temperature, #대답 창의성 0-2, 기본값 1 
+        max_tokens=2048, # 응답 최대 토큰수
+        top_p=1, # 사용할 상위누적확률
+        frequency_penalty=0, # 토큰 사용 빈도수에 대한 패널티
+        presence_penalty=0 # 토큰 재사용데 대한 패널티
+    )
+
+    return response.choices[0].message.content    
+
+job_posting = """ 
+담당업무(구매/재고관리)
+ㆍ고객사 견적 작성 및 비교 분석
+ㆍ고객사 발주관리 - 발주량확인 및 발주
+ㆍ납품일정 관리 및 검수
+ㆍ세금계산서 및 거래명세서 발행
+ㆍ재고관리 - 입출고 차이 분석 및 조치, 정기 재고관리
+
+필수사항
+ㆍ운전 가능자
+ㆍMS OFFICE 중급 이상자(엑셀, 파워포인트)
+ㆍ의사소통 능력 원활한 자
+우대사항
+ㆍERP(SAP 등) 프로그램 활용 가능자
+ㆍ경력자 
+
+[회사소개] 
+ㆍ주소: 충청북도 청주시 흥덕구 오송읍 오송읍 의료단지길 49
+ㆍ주요사업내용: 비임상시험의 병리수탁 및 진단시약 연구개발
+ㆍ업종: 연구.서비스업
+ㆍ2015년 설립하여 비임상시험의 병리수탁 업무 및 병리진단시약 연구개발과 과학기기 사업을 하는 벤처. 중소기업입니다. 2023년 4월 신규사옥을 준공 완료하여 오랜기간 함께 근무할 인재를 모집합니다.
+"""
+
+interview_questions = job_interview(job_posting)
+print(interview_questions)
+
+---------------------------
+결과 
+# 1. 하드스킬
+
+질문 1)  
+MS Excel을 활용하여 구매 및 재고관리를 효율적으로 한 경험이 있으신가요? 구체적으로 어떤 기능을 사용했는지 설명해 주세요.
+
+답변 1)  
+네, 이전 직장에서 구매 및 재고관리를 담당하며 MS Excel의 다양한 기능을 적극 활용했습니다. 
+예를 들어, VLOOKUP과 PIVOT TABLE을 사용하여 재고 현황을 실시간으로 파악하고, 거래명세서 데이터를 자동으로 집계했습니다. 
+또한, 조건부 서식과 데이터 유효성 검사를 통해 입력 오류를 줄였고, 발주량 및 입출고 차이 분석을 위해 IF, SUMIF 등 수식도 자주 사용했습니다. 이로 인해 업무 효율성이 크게 향상되었습니다.
+
+질문 2)  
+ERP(SAP 등) 시스템을 사용해본 경험이 있으신가요? 있다면 어떤 업무에 어떻게 활용하셨는지 말씀해 주세요.
+
+답변 2)  
+네, 이전 회사에서 SAP ERP를 사용하여 구매 발주, 입출고 관리, 재고 실사 등의 업무를 진행했습니다. 
+발주 요청서를 ERP에 등록하고, 납품 일정과 실제 입고 내역을 시스템에서 관리했습니다. 
+또한, 재고 차이 발생 시 ERP에서 기록된 데이터를 기반으로 원인을 분석하고, 정기 재고조사 결과를 시스템에 반영하여 정확한 재고관리를 실현했습니다.
+
+질문 3)  
+납품 일정 관리와 검수 업무를 진행할 때 주로 사용하는 절차나 체크리스트가 있다면 설명해 주세요.
+
+답변 3)  
+납품 일정 관리는 우선 발주서와 납품 예정일을 엑셀 또는 ERP에 기록하고, 일정별로 알림을 설정해 놓습니다. 
+납품 당일에는 물품의 수량 및 품질을 거래명세서와 대조하여 검수하며, 이상이 있을 경우 즉시 공급업체에 연락해 조치합니다. 검수 후에는 결과를 내부 시스템에 기록하고, 필요시 세금계산서 발행까지 마무리합니다. 
+이 과정을 체크리스트로 만들어 누락되는 절차가 없도록 관리합니다.
+
+# 2. 소프트스킬
+
+질문 1)  
+고객사와 견적 협의 또는 발주 관련 소통 시 갈등이 발생한 경험이 있다면, 어떻게 해결하셨나요?
+...
+업무 중 여러 가지 일을 동시에 처리해야 할 때, 우선순위를 어떻게 정하고 관리하나요?
+
+답변 3)  
+업무의 중요도와 긴급도를 기준으로 우선순위를 정합니다. 예를 들어, 납품 일정과 관련된 업무는 고객사 신뢰에 직결되므로 최우선으로 처리하고, 그 외의 업무는 일정표와 체크리스트를 활용해 체계적으로 관리합니다. 
+또한, 업무 중간에 상황이 바뀌면 즉각적으로 우선순위를 재조정하고, 필요한 경우 팀원들과 협업하여 효율적으로 업무를 분배합니다.
+
+
+
