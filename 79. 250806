@@ -1,0 +1,312 @@
+
+AI Sommelier 시스템 구현 과정에서 중요한 개념 5가지를 선정하고, 각 개념을 간단한 3줄 요약으로 정리하면 다음과 같습니다:
+
+1. Prompt Engineering (프롬프트 설계)
+사용자와 모델 간의 역할, 성격(Persona), 예시를 구체적으로 설계해 원하는 스타일의 응답을 유도합니다.
+Sommelier나 Chef 등 전문적 캐릭터를 부여하여 자연스럽고 전문적인 문장을 생성하게 합니다.
+프롬프트 품질이 결과의 품질에 직결되므로 핵심적인 출발점입니다.
+
+2. Chain 구조 (LangChain Runnable Pipeline)
+여러 개의 작업(prompt → model → parser 등)을 파이프라인처럼 연결하여 복잡한 로직을 순차 처리합니다.
+예: 요리 이미지 → 풍미 분석 → 유사 와인 리뷰 검색 → 와인 추천으로 이어지는 체인 구조 구현.
+가독성과 확장성이 뛰어나며 유지보수에 유리한 구조입니다.
+
+3. RAG (Retrieval-Augmented Generation)
+LLM이 외부 지식(여기선 와인 리뷰)을 검색해 응답에 반영하도록 하여 정확성과 다양성을 높입니다.
+Pinecone + OpenAI Embedding을 통해 텍스트 벡터 기반 유사도 검색을 수행합니다.
+단순 LLM 응답보다 신뢰성 있고 구체적인 추천이 가능합니다.
+
+4. 멀티모달 입력 처리 (Image → 텍스트)
+이미지 URL을 기반으로 요리명을 추출하고 풍미를 요약하는 프로세스를 통해 시각 정보 이해가 가능해졌습니다.
+이는 단순 텍스트 입력이 아닌 사용자 친화적 UX를 위한 중요한 기능입니다.
+이미지를 통한 요리 인식 및 설명은 향후 음식 인식 기반 추천으로 확장 가능성이 큽니다.
+
+5. Context-aware Wine Recommendation
+음식 풍미 + 유사 리뷰 기반으로 문맥에 맞는 와인을 추천하는 알고리즘 설계가 핵심입니다.
+와인의 풍미 설명과 음식의 맛을 연결하는 "설명 가능성 있는 추천"을 제공합니다.
+단순 리스트 제공이 아닌, 왜 이 와인이 어울리는지까지 설명하는 점이 차별화 요소입니다.
+
+============================================
+
+AI Sommelier
+from dotenv import load_dotenv
+load_dotenv()
+True
+요리에 어울리는 와인 추천
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+prompt = ChatPromptTemplate([
+    ('system', """
+    Persona: You are a knowledgeable and experienced sommelier with a passion for wine and food pairings. You possess an extensive understanding of various wine regions, grape varieties, and tasting notes. Your demeanor is friendly and approachable, making wine accessible to everyone, whether they are novices or connoisseurs.
+
+    Role: As a sommelier, your role is to provide expert recommendations for wine selections that perfectly complement a variety of cuisines. You guide individuals in exploring new wines and help them understand the intricacies of wine tasting. Your goal is to enhance their dining experience by matching the right wine with the right dish.
+
+    Examples:
+
+    When asked for a wine recommendation for grilled garlic butter shrimp, you suggest a Chardonnay or Albariño, explaining how the wine's acidity balances the richness of the dish.
+    If someone inquires about affordable yet high-quality wines, you recommend specific options from different regions, highlighting their flavor profiles and food pairings.
+    When discussing wine storage, you provide practical advice on temperature, humidity, and ideal conditions to preserve wine quality.
+    """
+    ),
+    ('human', """
+    다음 요리에 어울리는 와인을 한국말로 답변을 해주세요.
+    요리명: {query}
+    """
+    )
+])
+
+model = ChatOpenAI(
+    model_name='gpt-4.1',
+    temperature=1
+)
+
+ourput_parser = StrOutputParser()
+
+chain = prompt | model | ourput_parser
+
+response = chain.invoke({'query':'떡볶이'})
+print(response)
+떡볶이와 잘 어울리는 와인으로는 ‘모스카토(Moscato)’ 같은 약간 달콤하고 가벼운 스파클링 와인을 추천드립니다. 떡볶이의 매콤달콤한 양념에 모스카토의 청량한 단맛과 산도가 아주 잘 어울려서 입안을 깔끔하게 정리해줍니다.
+
+만약 좀 더 드라이한 와인을 원하신다면, 독일의 리슬링(Riesling) 중에서도 반드라이(Off-dry) 스타일을 선택하시면 좋습니다. 리슬링의 은은한 과일향과 산뜻한 산미가 매운맛을 부드럽게 감싸줍니다.
+
+참고로, 레드 와인 중에는 라이트 바디의 ‘람브루스코(Lambrusco)’—가성비 좋은 이탈리아산 스파클링 레드 와인—도 추천할 만합니다. 탄산과 시원한 체리 향이 강한 소스와 적당히 어울립니다.
+
+정리하자면,
+- **모스카토**: 달콤, 청량, 스파클링 → 매운맛 완화, 깔끔한 마무리
+- **오프 드라이 리슬링**: 산뜻한 산미와 과실향 → 양념의 매운맛 조화
+- **람브루스코**: 라이트 바디, 약간의 탄산, 체리풍미 → 가벼운 레드와인 스타일
+
+이 세 가지 중에서 기호에 따라 선택해 보시면 떡볶이와 와인의 새로운 조화를 즐기실 수 있을 거예요!
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+
+def recommend_dishes(query):
+    prompt = ChatPromptTemplate([
+        ('system', """
+        Persona: You are a knowledgeable and experienced chef with a deep passion for crafting dishes that pair beautifully with wines. You possess a comprehensive understanding of how flavors and textures in food can complement different wines. Your approach is friendly and approachable, helping everyone from novices to culinary enthusiasts explore the world of wine pairings.
+
+        Role: As a chef, your role is to create expert recommendations for dishes that pair perfectly with a variety of wines. You guide individuals in discovering new culinary creations and help them understand how food and wine can work together harmoniously. Your goal is to enhance their dining experience by matching the right dishes with the right wines.
+
+        Examples:
+
+        When asked for a dish to pair with a Chardonnay, you recommend a grilled lobster with lemon butter, explaining how the wine’s acidity and rich texture complement the lobster’s delicate sweetness.
+        If someone inquires about a meal that goes well with a robust red like Cabernet Sauvignon, you suggest a hearty steak with rosemary garlic potatoes, highlighting how the wine’s tannins enhance the richness of the meat.
+        When discussing lighter wines like Sauvignon Blanc, you recommend a fresh goat cheese salad with citrus, explaining how the crisp acidity and herbal notes of the wine enhance the dish’s brightness.
+        """
+        ),
+        HumanMessagePromptTemplate.from_template([
+        {'text': '다음 와인에 어울리는 요리를 한국말로 답변해주세요.'},
+        {'image_url': '{image_url}'}
+        ])
+    ])
+
+    model = ChatOpenAI(
+        model_name='gpt-4.1',
+        temperature=1
+    )
+
+    ourput_parser = StrOutputParser()
+
+    chain = prompt | model | ourput_parser
+
+    return chain.invoke(query) 
+
+print(recommend_dishes({'image_url': 'https://images.vivino.com/thumbs/iE_y2NRLSWKWw--znVRE3Q_pb_x600.png'}))
+이 와인은 독일의 드라이(건조) 리슬링, **Jakob Schneider Niederhäuser Felsensteyer Riesling Trocken**입니다. 드라이 리슬링은 산미가 높고, 상큼하며 미네랄리티가 좋은 화이트 와인입니다. 레몬, 라임, 사과 등의 과실향과 함께 깔끔한 피니시가 특징이에요.
+
+### 어울리는 한식 요리 추천
+
+1. **회 (생선회)**
+   - 리슬링의 청량한 산미와 상큼함이 흰살생선이나 광어, 도미 같은 깔끔한 회와 아주 잘 어울립니다. 와인의 산미가 입안을 개운하게 정리해주고, 해산물의 신선한 맛을 더욱 살려줍니다.
+
+2. **간장게장**
+   - 달지 않고 짭조름한 간장게장은 드라이 리슬링과 아주 좋은 궁합입니다. 게장의 감칠맛과 리슬링의 산도가 만나면 비린내를 잡으면서도 서로의 풍미를 높여줍니다.
+
+3. **해산물 파전**
+   - 해산물이 듬뿍 들어간 파전이나 굴전도 추천해 드려요. 와인의 산미가 해산물의 기름진 맛을 잡아주고, 깔끔하게 입맛을 돋워줍니다.
+
+4. **백김치 또는 바삭한 김치전**
+   - 백김치의 시원한 맛과 리슬링의 산미가 조화롭고, 바삭한 김치전 역시 와인과 좋은 조화를 이룹니다.
+
+5. **찜닭(간장 베이스)**
+   - 간장 베이스의 단짠 찜닭도 리슬링과 잘 어울립니다. 닭고기와 채소의 감칠맛, 그리고 달콤한 간장 소스가 와인의 산미와 만나 맛이 더욱 살아납니다.
+
+---
+리슬링은 해산물, 밝고 산뜻한 요리, 깔끔한 맛을 가진 음식과 조화롭고, 간장 베이스나 너무 맵지 않은 한식과 특히 잘 어울립니다.  
+즐거운 페어링 되시길 바랍니다!
+
+==========================================
+AI Sommelier RAG
+from dotenv import load_dotenv
+load_dotenv()
+True
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+def describe_dish_flavor(query):
+    prompt = ChatPromptTemplate.from_messages([
+        ('system', '''
+        Persona: You are a highly skilled food expert with a deep understanding of culinary techniques, flavor profiles, and ingredient pairings. You have a passion for exploring diverse cuisines and an ability to articulate the sensory experience of food. Your insights are backed by both practical experience and theoretical knowledge, making you a trusted source in the culinary field.
+
+        Role: As a food expert, your role is to analyze the flavors, textures, and aromas of various dishes. You provide detailed evaluations of ingredients and cooking methods, helping others understand how to create balanced and harmonious dishes. You also educate individuals on how to enhance their cooking skills and appreciate the art of gastronomy.
+
+        Examples:
+
+        When asked to analyze the flavor profile of a dish, you describe the balance between acidity, sweetness, bitterness, and umami, explaining how these elements interact to create a complex taste experience.
+        If someone inquires about the best techniques for enhancing a specific ingredient, you offer practical advice, such as how to caramelize onions for depth of flavor or how to properly season meat to bring out its natural taste.
+        When discussing food pairings, you suggest complementary ingredients and flavors, explaining the rationale behind each choice, such as pairing citrus with seafood to brighten the dish or using herbs to elevate the overall taste.
+        '''),
+        ('user', '이미지의 요리명과 풍미를 한 문장으로 요약해주세요.')
+    ])
+    # prompt concat 연산 지원
+    prompt += HumanMessagePromptTemplate.from_template([query])
+    model = ChatOpenAI(model_name='gpt-4.1', temperature=0)
+    output_parser = StrOutputParser()
+
+    chain = prompt | model | output_parser
+    return chain
+from langchain_core.runnables import RunnableLambda
+
+chain = RunnableLambda(describe_dish_flavor)
+chain.invoke({'image_url': 'https://contents-cdn.viewus.co.kr/image/2023/11/CP-2022-0178/image-1193fc9f-bad9-4884-9c11-d6c8be68ee6a.jpeg'})
+"이 요리는 '소고기 국수(베트남 쌀국수, 퍼)'로, 맑고 깊은 소고기 육수에 쫄깃한 쌀국수와 부드러운 소고기, 신선한 파와 고추가 어우러져 담백하면서도 은은한 감칠맛이 특징입니다."
+리뷰에서 와인검색
+from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_pinecone import PineconeVectorStore
+import os
+
+PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
+PINECONE_NAMESPACE = os.getenv('PINECONE_NAMESPACE')
+PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+
+def search_wines(query):
+    """
+    :param query: 요리설명 텍스트
+    :return: 요리 설명에 어울리는 와인 리뷰 추천 결과 
+    """
+    embeddings = OpenAIEmbeddings(model='text-embedding-3-small')
+    vector_db = PineconeVectorStore(    # pinecone DB에 연결
+        embedding=embeddings,
+        index_name=PINECONE_INDEX_NAME,
+        namespace=PINECONE_NAMESPACE,
+        pinecone_api_key=PINECONE_API_KEY
+    )
+    results = vector_db.similarity_search(
+        query,
+        k=5,
+        namespace=PINECONE_NAMESPACE
+    )
+    return {
+        "dish_flavor": query,
+        "wine_reviews": "\n".join([doc.page_content for doc in results])
+    }
+c:\dev\miniconda\envs\pystudy_env\Lib\site-packages\tqdm\auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+chain = RunnableLambda(search_wines)
+chain.invoke('이 요리는 설렁탕으로, 깊고 진한 소고기 육수에 부드러운 고기와 쫄깃한 면, 그리고 파의 상큼함이 어우러져 담백하면서도 고소한 풍미가 특징입니다.')
+{'dish_flavor': '이 요리는 설렁탕으로, 깊고 진한 소고기 육수에 부드러운 고기와 쫄깃한 면, 그리고 파의 상큼함이 어우러져 담백하면서도 고소한 풍미가 특징입니다.',
+ 'wine_reviews': ": 75348\ncountry: US\ndescription: The Yiddish word “zaftig” perfectly describes this Petite Sirah. It's big, powerful and fleshy, with potent flavors of blackberries, cherries, plums, currants, dark chocolate, licorice, bacon and peppery spices, all wrapped into significant tannins. A very nice example of the variety, it's dry and balanced, and should age for years.\ndesignation: \npoints: 91\nprice: 27.0\nprovince: California\nregion_1: Dry Creek Valley\nregion_2: Sonoma\ntaster_name: \ntaster_twitter_handle: \ntitle: Kokomo 2007 Petite Sirah (Dry Creek Valley)\nvariety: Petite Sirah\nwinery: Kokomo\n: 64689\ncountry: US\ndescription: The Yiddish word zaftig describes this Merlot perfectly. It's fleshy, with a soft, fat mouthfeel framing ultraripe cherry pie filling, milk chocolate, anise and sandalwood flavors that finish jammy-sweet and spicy.\ndesignation: \npoints: 87\nprice: 25.0\nprovince: California\nregion_1: Paso Robles\nregion_2: Central Coast\ntaster_name: \ntaster_twitter_handle: \ntitle: Pacific Coast 2008 Merlot (Paso Robles)\nvariety: Merlot\nwinery: Pacific Coast\n: 26884\ncountry: Spain\ndescription: Overt can't-miss aromas of mustard and sauerkraut would be fine if this were a hot dog, but it's not. In the mouth, this feels strained and wiry. Sour pickled flavors of cabbage and plum finish raw. This is loaded with challenges and flaws.\ndesignation: \npoints: 81\nprice: 18.0\nprovince: Northern Spain\nregion_1: Ribera del Duero\nregion_2: \ntaster_name: Michael Schachner\ntaster_twitter_handle: @wineschach\ntitle: Pagos de Valcerracin 2015  Ribera del Duero\nvariety: Tempranillo\nwinery: Pagos de Valcerracin\n: 11324\ncountry: US\ndescription: Tarry, savory notes of dried beef, soy, charred lamb and underlying blackberry combine for a nose that screams umami. The palate carries a similar effect of grilled, lavender-covered lamb shank, black peppercorns and black sesame.\ndesignation: \npoints: 93\nprice: 35.0\nprovince: California\nregion_1: Santa Ynez Valley\nregion_2: Central Coast\ntaster_name: Matt Kettmann\ntaster_twitter_handle: @mattkettmann\ntitle: Pace 2013 Syrah (Santa Ynez Valley)\nvariety: Syrah\nwinery: Pace\n: 20494\ncountry: US\ndescription: This lightly sweet wine has an intense oaky, peppery, smoky aroma and the flavors come out the same way. The beefy, liquid-smoke character should match ribs in barbecue sauce.\ndesignation: Sultry\npoints: 85\nprice: 12.0\nprovince: California\nregion_1: California\nregion_2: California Other\ntaster_name: Jim Gordon\ntaster_twitter_handle: @gordone_cellars\ntitle: Hey Mambo 2013 Sultry Red (California)\nvariety: Red Blend\nwinery: Hey Mambo"}
+chain = RunnableLambda(describe_dish_flavor) | RunnableLambda(search_wines)
+result = chain.invoke({'image_url': 'https://www.foodiesfeed.com/wp-content/uploads/2023/05/freshly-prepared-beef-steak-with-vegetables.jpg'})
+result
+{'dish_flavor': '요리명: 로스트 비프와 허브 로스트 토마토  \n풍미 요약: 육즙 가득한 소고기와 신선한 허브, 구운 토마토의 산미가 어우러져 깊고 풍부한 감칠맛을 선사하는 요리입니다.',
+ 'wine_reviews': ": 24295\ncountry: South Africa\ndescription: A good amount of sweet smoke and cured bacon aromas integrate seamlessly with the boysenberry and black plum notes. Ripe, juicy fruit flavors provide a mouthwatering sensation on the palate, while a touch of tobacco leaf and charred cedar lingers on the long finish.\ndesignation: \npoints: 88\nprice: 41.0\nprovince: Stellenbosch\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Hartenberg 2007 Merlot (Stellenbosch)\nvariety: Merlot\nwinery: Hartenberg\n: 65236\ncountry: South Africa\ndescription: An enticing herbal streak is often identifiable in Thelema's wines, and this is no exception, with hints of menthol, fynbos, tobacco and fig leaf, as well as a gamy accent in the background. There's plenty of fruit to mingle with these earthy tones—flavors of black plum, currant and a touch of fig paste all abound on the palate.\ndesignation: \npoints: 87\nprice: 29.0\nprovince: Stellenbosch\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Thelema 2009 Merlot (Stellenbosch)\nvariety: Merlot\nwinery: Thelema\n: 6517\ncountry: US\ndescription: Notes of spiced toast, Raisinets, hickory and prune mingle on the smoky, slightly baked nose. The flavors are concentrated and intense, but the baked quality is a little too distracting.\ndesignation: Bethlehem Valley\npoints: 83\nprice: 25.0\nprovince: Missouri\nregion_1: Missouri\nregion_2: \ntaster_name: \ntaster_twitter_handle: \ntitle: Mount Pleasant Winery 2007 Bethlehem Valley Norton (Missouri)\nvariety: Norton\nwinery: Mount Pleasant Winery\n: 6517\ncountry: US\ndescription: Notes of spiced toast, Raisinets, hickory and prune mingle on the smoky, slightly baked nose. The flavors are concentrated and intense, but the baked quality is a little too distracting.\ndesignation: Bethlehem Valley\npoints: 83\nprice: 25.0\nprovince: Missouri\nregion_1: Missouri\nregion_2: \ntaster_name: \ntaster_twitter_handle: \ntitle: Mount Pleasant Winery 2007 Bethlehem Valley Norton (Missouri)\nvariety: Norton\nwinery: Mount Pleasant Winery\n: 256\ncountry: South Africa\ndescription: A good value, this is an easy-pleasing Syrah with vibrant notes of red plum, cherry and blueberry. Fine, dusty tannins reminiscent of cocoa powder and dried crushed berries stay after swallow alongside a hint of sweet smoke flavor.\ndesignation: Goat-Roti\npoints: 89\nprice: 20.0\nprovince: Coastal Region\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Goats do Roam Wine Co. 2008 Goat-Roti Syrah-Viognier (Coastal Region)\nvariety: Syrah-Viognier\nwinery: Goats do Roam Wine Co."}
+3. 와인 추천
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+def recommend_wines(query):
+    prompt = ChatPromptTemplate.from_messages([
+        ('system', """
+        Persona: You are a knowledgeable and experienced sommelier with a passion for wine and food pairings. You possess an extensive understanding of various wine regions, grape varieties, and tasting notes. Your demeanor is friendly and approachable, making wine accessible to everyone, whether they are novices or connoisseurs.
+
+        Role: As a sommelier, your role is to provide expert recommendations for wine selections that perfectly complement a variety of cuisines. You guide individuals in exploring new wines and help them understand the intricacies of wine tasting. Your goal is to enhance their dining experience by matching the right wine with the right dish.
+
+        Examples:
+
+        When asked for a wine recommendation for grilled garlic butter shrimp, you suggest a Chardonnay or Albariño, explaining how the wine's acidity balances the richness of the dish.
+        If someone inquires about affordable yet high-quality wines, you recommend specific options from different regions, highlighting their flavor profiles and food pairings.
+        When discussing wine storage, you provide practical advice on temperature, humidity, and ideal conditions to preserve wine quality.
+        """),
+        HumanMessagePromptTemplate.from_template("""
+        와인페어링 추천에 아래의 요리와 풍미, 와인리뷰만을 참고하여 한글로 답변해주세요.
+        요리와 풍미:
+        {dish_flavor}
+        와인리뷰:
+        {wine_reviews}                                         
+        """)
+    ])
+
+    model = ChatOpenAI(
+        model_name='gpt-4.1',
+        temperature=1
+    )
+
+    output_parser = StrOutputParser()
+
+    chain = prompt | model | output_parser
+    return chain
+chain = RunnableLambda(recommend_wines)
+chain.invoke({'dish_flavor': '요리명: 로스트 비프와 허브 로스트 토마토 풍미 요약: 육즙 가득한 소고기와 신선한 허브, 구운 토마토의 산미가 어우러져 깊고 풍부한 감칠맛을 선사하는 요리입니다.',
+             'wine_reviews' : ": 24295\ncountry: South Africa\ndescription: A good amount of sweet smoke and cured bacon aromas integrate seamlessly with the boysenberry and black plum notes. Ripe, juicy fruit flavors provide a mouthwatering sensation on the palate, while a touch of tobacco leaf and charred cedar lingers on the long finish.\ndesignation: \npoints: 88\nprice: 41.0\nprovince: Stellenbosch\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Hartenberg 2007 Merlot (Stellenbosch)\nvariety: Merlot\nwinery: Hartenberg\n: 65236\ncountry: South Africa\ndescription: An enticing herbal streak is often identifiable in Thelema's wines, and this is no exception, with hints of menthol, fynbos, tobacco and fig leaf, as well as a gamy accent in the background. There's plenty of fruit to mingle with these earthy tones—flavors of black plum, currant and a touch of fig paste all abound on the palate.\ndesignation: \npoints: 87\nprice: 29.0\nprovince: Stellenbosch\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Thelema 2009 Merlot (Stellenbosch)\nvariety: Merlot\nwinery: Thelema\n: 6517\ncountry: US\ndescription: Notes of spiced toast, Raisinets, hickory and prune mingle on the smoky, slightly baked nose. The flavors are concentrated and intense, but the baked quality is a little too distracting.\ndesignation: Bethlehem Valley\npoints: 83\nprice: 25.0\nprovince: Missouri\nregion_1: Missouri\nregion_2: \ntaster_name: \ntaster_twitter_handle: \ntitle: Mount Pleasant Winery 2007 Bethlehem Valley Norton (Missouri)\nvariety: Norton\nwinery: Mount Pleasant Winery\n: 6517\ncountry: US\ndescription: Notes of spiced toast, Raisinets, hickory and prune mingle on the smoky, slightly baked nose. The flavors are concentrated and intense, but the baked quality is a little too distracting.\ndesignation: Bethlehem Valley\npoints: 83\nprice: 25.0\nprovince: Missouri\nregion_1: Missouri\nregion_2: \ntaster_name: \ntaster_twitter_handle: \ntitle: Mount Pleasant Winery 2007 Bethlehem Valley Norton (Missouri)\nvariety: Norton\nwinery: Mount Pleasant Winery\n: 256\ncountry: South Africa\ndescription: A good value, this is an easy-pleasing Syrah with vibrant notes of red plum, cherry and blueberry. Fine, dusty tannins reminiscent of cocoa powder and dried crushed berries stay after swallow alongside a hint of sweet smoke flavor.\ndesignation: Goat-Roti\npoints: 89\nprice: 20.0\nprovince: Coastal Region\nregion_1: \nregion_2: \ntaster_name: Lauren Buzzeo\ntaster_twitter_handle: @laurbuzz\ntitle: Goats do Roam Wine Co. 2008 Goat-Roti Syrah-Viognier (Coastal Region)\nvariety: Syrah-Viognier\nwinery: Goats do Roam Wine Co."})
+'로스트 비프와 허브 로스트 토마토는 육즙 가득한 소고기와 신선한 허브, 그리고 구운 토마토의 산미가 어우러져 풍미가 깊고 복합적인 요리입니다. 이런 요리에는 구조감 있는 레드와인이 훌륭하게 어울립니다. 특히 허브와 토마토의 신선함, 소고기의 육즙과 감칠맛을 받을 수 있는 약간의 산도, 적당한 탄닌, 그리고 풍부한 과일향과 약간의 스모키함이 있는 와인을 추천드립니다.\n\n와인리뷰를 참고하여 다음과 같이 추천드립니다:\n\n---\n\n**1. Hartenberg 2007 Merlot (Stellenbosch)**\n- **풍미:** 보이젠베리, 블랙 플럼과 함께 스위트 스모크, 베이컨, 담배잎, 그리고 그을린 삼목의 잔향이 길게 남습니다.\n- **페어링 이유:** 고기 요리와 어울리는 훈연향과 베이컨 느낌, 입안에서 퍼지는 풍부하고 익은 과일 풍미가 로스트 비프의 육즙과 잘 어울립니다. 토마토의 산미도 잘 받을 수 있는 산도와 깊이를 가진 와인입니다.\n\n---\n\n**2. Thelema 2009 Merlot (Stellenbosch)**\n- **풍미:** 멘톨, 허브, 담배, 피그잎, 은은한 야생적 뉘앙스, 검은 자두, 커런트, 무화과 페이스트 등 다채로운 풍미가 어우러집니다.\n- **페어링 이유:** 허브의 향긋함과 고기의 짙은 맛, 토마토의 산도를 모두 아우를 수 있는 복합적인 뉘앙스가 조화롭습니다. 허브의 활기가 요리에 살아있는 신선함을 잘 살려줍니다.\n\n---\n\n**3. Goats do Roam Wine Co. 2008 Goat-Roti Syrah-Viognier (Coastal Region)**\n- **풍미:** 레드 플럼, 체리, 블루베리 등 신선한 과실향과 함께 코코아 파우더 같은 미세한 탄닌, 약간의 달콤한 스모키함이 어우러집니다.\n- **페어링 이유:** 과실의 산뜻함과 달콤한 스모키함이 허브와 잘 어우러지며, 로스트된 소고기의 풍미와 밸런스를 이루어줍니다. 토마토 특유의 새콤함과도 무난하게 잘 맞습니다. 부드럽지만 충분한 구조감이 있어 식사의 풍미를 돋워줍니다.\n\n---\n\n**추천 와인 선택 팁**\n- 세 가지 모두 로스트 비프와 허브, 토마토의 산미와 잘 맞으며, 특히 스모키하거나 허브, 담배 뉘앙스가 있는 와인이 요리의 깊이와 풍미를 한층 높여줍니다.\n- 좀 더 신선하고 경쾌한 페어링을 원하신다면 Syrah-Viognier 추천, 무게감과 깊이감을 조금 더 원하신다면 Merlot 와인을 택하시면 좋겠습니다.\n\n즐거운 식사와 멋진 와인 페어링 되시길 바랍니다!'
+from langchain_core.runnables import RunnableLambda
+
+chain = RunnableLambda(describe_dish_flavor) | RunnableLambda(search_wines) | RunnableLambda(recommend_wines)
+
+print(chain.invoke({'image_url': 'https://www.foodiesfeed.com/wp-content/uploads/2023/05/freshly-prepared-beef-steak-with-vegetables.jpg'}))
+로스트 비프와 허브 로스트 토마토는 육즙 가득한 소고기와 신선한 허브의 향, 그리고 구운 토마토의 달콤함이 조화로운, 깊고 풍부한 풍미가 인상적인 요리입니다. 이와 어울릴 남아프리카 와인 4종을 추천드리겠습니다.
+
+**1. Hartenberg 2007 Merlot (Stellenbosch)**
+- 리치한 보이즌베리와 검은 자두, 그리고 스윗 스모크와 베이컨, 시가박스, 차드 시더의 여운이 느껴지는 와인입니다. 고기의 풍미와 와인의 스모키함, 베이컨 풍미가 서로 잘 어우러지며, 로스트 비프의 깊이를 한층 더해줍니다.
+
+**2. Thelema 2009 Merlot (Stellenbosch)**
+- 허브, 멘톨, 타바코, 피그 리프 등 복합적인 허브와 훈연 느낌, 풍부한 블랙 플럼과 커런트, 피그 페이스트까지 다양한 풍미가 인상적입니다. 허브 로스트 토마토와의 향긋한 시너지, 소고기와의 자연스러운 조화를 모두 즐기실 수 있습니다.
+
+**3. Deetlefs 2007 Merlot (Breedekloof)**
+- 초콜릿이 가미된 라즈베리, 발사믹 글레이즈, 우디 스파이스, 블랙 플럼 등 진한 과실과 약간의 스파이스함이 특징입니다. 미디엄 탄닌의 실키한 질감이 육즙 가득한 비프와 훌륭하게 밸런스를 맞춰줍니다.
+
+**4. Goats do Roam Wine Co. 2008 Goat-Roti Syrah-Viognier (Coastal Region)**
+- 레드 플럼, 체리, 블루베리 등 산뜻한 과실과 코코아 파우더를 연상시키는 미세한 탄닌, 은은한 스모크가 어우러진 와인입니다. 토마토의 달콤함 역시 이 와인의 과일 풍미와 잘 어울리며, 전체적으로 가볍지 않으면서도 부담스럽지 않게 즐길 수 있습니다.
+
+---
+**추천 포인트**
+- 로스트 비프의 깊고 진한 맛에는 스모키하거나 허브 노트가 살아있는 남아공 메를로나 시라/비오니에 블렌드가 훌륭하게 어울립니다.
+- 구운 토마토와 허브의 산미와 향긋함은 각 와인의 풍부한 과실향과 미묘한 스파이스, 허브 향으로 시너지 효과를 냅니다.
+
+궁금하신 점이나 특정한 스타일(예: 더 부드러운 와인, 더 진한 와인)이 있으시면 추가로 추천드릴 수 있습니다!
+print(chain.invoke({'image_url': 'https://contents-cdn.viewus.co.kr/image/2023/11/CP-2022-0178/image-1193fc9f-bad9-4884-9c11-d6c8be68ee6a.jpeg'}))
+쌀국수(베트남식 Pho)의 담백하고 감칠맛이 풍부한 소고기 육수, 쫄깃한 면, 신선한 채소의 조화는 섬세하고 균형 잡힌 와인 페어링이 중요합니다. 제안된 와인 리뷰를 바탕으로, 각각의 와인이 쌀국수와 어떻게 어울릴지 설명드리겠습니다.
+
+### 1. Goats do Roam Wine Co. 2008 Goat-Roti Syrah-Viognier (South Africa)  
+**풍미:** 레드 플럼, 체리, 블루베리 같은 밝은 과실향에, 미세하고 건조한 탄닌, 코코아 파우더, 살짝 스모키한 뉘앙스가 있습니다.  
+**페어링:** 베트남 쌀국수의 담백함과 은은한 허브, 고기의 감칠맛을 레드 과실향과 적당한 산도, 부드러운 탄닌이 잘 감싸줍니다. 스모키한 뉘앙스가 진한 육수의 깊이를 더해주며, 너무 무겁지 않아 조화롭게 어울립니다.
+
+### 2. Boxwood 2011 Rosé (Virginia, US)  
+**풍미:** 복숭아, 살구, 딸기와 신 체리의 가벼운 산미와 산뜻함이 특징.  
+**페어링:** 쌀국수와 함께 즐기기에 산뜻한 로제 와인은 신선한 채소와 잘 어울리고 담백함을 살려줍니다. 다만, 풍미가 비교적 연해 진한 육수에는 다소 약할 수 있으니 좀 더 가벼운(예: 닭고기 쌀국수) 버전에 잘 맞습니다.
+
+### 3. Pace 2013 Syrah (Santa Ynez Valley, California)  
+**풍미:** 말린 소고기, 간장, 숯불, 라벤더, 블랙 페퍼, 블랙베리, 감칠맛 강한 풍미.  
+**페어링:** 이 와인은 쌀국수의 소고기 육수, 허브, 감칠맛과 강력한 시너지 효과를 냅니다. 후추와 간장, 건조한 육류향이 육수의 깊은 맛과 어울리고, 산도와 힘있는 구조가 느끼함을 잡아줍니다. 쌀국수에 고수가 듬뿍 들어갈 때 특히 추천합니다.
+
+### 4. Pomar Junction 2012 Syrah (Paso Robles, California)  
+**풍미:** 라벤더, 후추, 소, 아스팔트, 모카, 블랙 세서미, 산도가 생기 넘치는 중간 바디.  
+**페어링:** 향신료와 허브를 곁들인 쌀국수, 혹은 기름진 사이드(예: 튀김 춘권)와 아주 잘 맞습니다. 와인의 허브와 스파이스가 국물의 감칠맛과 조화를 이루고, 신선한 산미가 입맛을 돋웁니다.
+
+---
+
+## 정리
+- **가장 추천:** 진한 소고기 육수의 감칠맛, 허브, 신선함이 특징인 쌀국수라면, **Syrah 또는 Syrah-Viognier 블렌드**(예: Goats do Roam, Pace Syrah, Pomar Junction Syrah)가 고기의 풍미와 허브, 향신료와 멋지게 어우러집니다.
+- **가벼운 쌀국수엔:** 로제(Boxwood Rosé)도 괜찮지만, 육수 맛이 진하지 않을 때 더 잘 어울립니다.
+
+**한마디 조언:**  
+와인을 차갑게(약 15~16도) 약간 식혀 먹으면 쌀국수의 허브와 채소가 더욱 상쾌하게 살아나니, 꼭 시도해 보세요! 쌀국수와 와인의 새롭고 조화로운 페어링을 즐기시길 바랍니다.
